@@ -12,3 +12,9 @@ docs/
 
 # Dotenv file
 .env
+
+# Miscellaneous
+.gas-snapshot
+.DS_Store
+.private/
+.vscode/

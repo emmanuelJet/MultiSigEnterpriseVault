@@ -1,66 +1,59 @@
-## Foundry
+# MultiSigEnterpriseVault
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+An open-source, enterprise-grade Multi-Signature Vault smart contract developed using Solidity and Foundry. It provides advanced security, customizable timelocks, and role-based access control for managing digital assets.
 
-Foundry consists of:
+## Features
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- Multi-signature functionality with flexible threshold settings.
+- Separate timelocks for transactions and owner overrides.
+- Role-based access control (Owner, Executor, Signers).
+- Secure self-destruct mechanism with safety checks.
 
-## Documentation
+## Getting Started
 
-https://book.getfoundry.sh/
+- Clone the repository:
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```bash
+git clone https://github.com/emmanuelJet/MultiSigEnterpriseVault.git
+cd MultiSigEnterpriseVault
 ```
 
-### Test
+- Install dependencies:
 
-```shell
-$ forge test
+```bash
+forge install
 ```
 
-### Format
+- Run the compiler command:
 
-```shell
-$ forge fmt
+```bash
+forge build
 ```
 
-### Gas Snapshots
+- Run the test command:
 
-```shell
-$ forge snapshot
+```bash
+forge test
 ```
 
-### Anvil
+- Run the gas-snapshot command:
 
-```shell
-$ anvil
+```bash
+forge snapshot
 ```
 
-### Deploy
+## License
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+```md
+Copyright (C) 2024  Emmanuel Joseph <hello@emmanueljet.com> (https://emmanueljet.com)
 
-### Cast
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 ```
