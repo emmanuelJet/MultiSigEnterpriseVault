@@ -7,15 +7,6 @@ assignees: emmanuelJet
 
 ---
 
----
-name: Documentation
-about: Tasks involving writing or updating documentation
-title: 'docs: brief description'
-labels: documentation
-assignees: 'emmanuelJet'
-
----
-
 ## Documentation Task
 
 Describe the documentation that needs to be created or updated.

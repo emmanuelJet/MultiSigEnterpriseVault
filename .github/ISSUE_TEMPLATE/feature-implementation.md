@@ -7,15 +7,6 @@ assignees: emmanuelJet
 
 ---
 
----
-name: Feature Implementation
-about: Template for implementing new features or functionalities
-title: 'feat: brief description'
-labels: enhancement
-assignees: 'emmanuelJet'
-
----
-
 ## Feature Description
 
 Provide a detailed description of the feature to be implemented.

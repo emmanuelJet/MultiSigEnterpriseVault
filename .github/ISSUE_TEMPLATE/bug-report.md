@@ -7,15 +7,6 @@ assignees: emmanuelJet
 
 ---
 
----
-name: Bug Report
-about: Report a bug or issue in the code
-title: 'bug: brief description'
-labels: bug
-assignees: 'emmanuelJet'
-
----
-
 ## Describe the Bug
 
 A clear and concise description of what the bug is.
