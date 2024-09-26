@@ -23,7 +23,7 @@ If you have any questions or need further assistance, feel free to reach out in 
 Describe the purpose of the PR so that if you looked at it in 6 months, it would be clear from the overview why this was created. E.g.:
 
 ```md
-This PR entails the implementation of #2. It introduces the owner role functionality and the following actions were implemented:
+This PR entails the implementation of emmanuelJet/MultiSigEnterpriseVault#2. It introduces the owner role functionality and the following actions were implemented:
 
 - **[feat]** `OwnerContract` with owner functionalities
 - **[perf]** Optimized `foundry.toml` file
