@@ -69,7 +69,7 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
    */
   function increaseOwnerOverrideTimelockLimit(
     uint256 newLimit
-  ) public onlyOwner {
+  ) public onlyRole(OWNER_ROLE) {
     require(newLimit > ownerOverrideTimelock, 'OwnerRole: New limit must be higher');
     ownerOverrideTimelock = newLimit;
     emit OwnerOverrideTimelockIncreased(newLimit);
@@ -85,9 +85,23 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
    */
   function decreaseOwnerOverrideTimelockLimit(
     uint256 newLimit
-  ) public onlyOwner {
+  ) public onlyRole(OWNER_ROLE) {
     require(newLimit < ownerOverrideTimelock, 'OwnerRole: New limit must be lower');
     ownerOverrideTimelock = newLimit;
     emit OwnerOverrideTimelockDecreased(newLimit);
+  }
+
+  /**
+   * @notice Internal function to change the owner address.
+   */
+  function _changeOwner() internal onlyRole(OWNER_ROLE) {
+    address newOwner = _msgSender();
+    address oldOwner = _owner;
+    if (newOwner == oldOwner) {
+      revert AccessControlUnauthorizedOwner(newOwner);
+    }
+
+    _owner = newOwner;
+    emit OwnerChanged(oldOwner, newOwner);
   }
 }

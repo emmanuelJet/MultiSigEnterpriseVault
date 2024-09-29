@@ -44,7 +44,7 @@ library Counters {
    * @param counter The counter to increment
    * @param quantity The amount to increment the counter by
    */
-  function batchIncrement(Counter storage counter, uint256 quantity) internal {
+  function incrementBy(Counter storage counter, uint256 quantity) internal {
     counter.value = counter.value.add(quantity);
   }
 
@@ -65,7 +65,7 @@ library Counters {
    * @param quantity The amount to decrement the counter by
    * @dev Reverts if the counter does not have enough value.
    */
-  function batchDecrement(Counter storage counter, uint256 quantity) internal {
+  function decrementBy(Counter storage counter, uint256 quantity) internal {
     counter.value = counter.value.subtract(quantity);
   }
 }

@@ -14,6 +14,31 @@ interface IExecutorRole {
   error AccessControlUnauthorizedExecutor(address account);
 
   /**
+   * @dev Error thrown when attempting to add a new executor with an existing user role.
+   */
+  error InvalidExecutorUser(address account);
+
+  /**
+   * @dev Error thrown when attempting to add a new executor when one exists.
+   */
+  error ExecutorAlreadyExists();
+
+  /**
+   * @dev Error thrown when attempting to initiate an already active owner override.
+   */
+  error OwnerOverrideAlreadyActive();
+
+  /**
+   * @dev Error thrown when attempting to approve a non active owner override.
+   */
+  error OwnerOverrideNotActive();
+
+  /**
+   * @dev Error thrown when trying to approve an owner override before the timelock has passed.
+   */
+  error OwnerOverrideTimelockNotElapsed(uint256 currentTime, uint256 requiredTime);
+
+  /**
    * @dev Event emitted when a new executor is added.
    * @param executor The new executor address.
    */
@@ -30,5 +55,19 @@ interface IExecutorRole {
    * @param oldExecutor The old executor address.
    * @param newExecutor The new executor address.
    */
-  event ExecutorUpdated(address oldExecutor, address indexed newExecutor);
+  event ExecutorUpdated(address indexed oldExecutor, address indexed newExecutor);
+
+  /**
+   * @dev Event emitted when the owner override process is initiated by the executor.
+   * @param executor The address of the executor.
+   * @param timestamp The time when the override was initiated.
+   */
+  event OwnerOverrideInitiated(address indexed executor, uint256 timestamp);
+
+  /**
+   * @dev Event emitted when the owner override process is approved after the timelock.
+   * @param executor The address of the executor.
+   * @param timestamp The time when the override was approved.
+   */
+  event OwnerOverrideApproved(address indexed executor, uint256 timestamp);
 }

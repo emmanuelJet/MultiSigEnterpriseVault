@@ -24,9 +24,8 @@ contract MultiSigEnterpriseVault is User, IMultiSigEnterpriseVault {
     uint256 initialThreshold,
     uint256 initialOwnerOverrideLimit
   ) User(owner, initialOwnerOverrideLimit) {
-    if (AddressUtils.isValidUserAddress(owner)) {
-      signatoryThreshold = initialThreshold;
-    }
+    AddressUtils.requireValidUserAddress(owner);
+    signatoryThreshold = initialThreshold;
   }
 
   /**
@@ -37,7 +36,7 @@ contract MultiSigEnterpriseVault is User, IMultiSigEnterpriseVault {
   function ownerUpdateSignatoryThreshold(
     uint256 newThreshold
   ) public onlyOwner {
-    if (totalSigners() >= signatoryThreshold) {
+    if (newThreshold > signatoryThreshold && totalSigners() >= signatoryThreshold) {
       revert SignersApprovalRequired();
     }
 

@@ -22,6 +22,7 @@ contract MultiSigFuzzTest is MultiSigEnterpriseVaultTest {
     address newExecutor
   ) public {
     vm.assume(newExecutor != address(0));
+    vm.assume(newExecutor != vaultOwner);
 
     vm.prank(vaultOwner);
     vault.addExecutor(newExecutor);
