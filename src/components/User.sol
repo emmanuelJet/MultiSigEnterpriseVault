@@ -96,11 +96,12 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
     address newExecutor
   ) public onlyOwner {
     address oldExecutor = executor();
-    if (oldExecutor.isValidUserAddress() && newExecutor.isValidUserAddress()) {
-      _updateExecutor(newExecutor);
-      _removeUser(oldExecutor);
-      _addUser(newExecutor, RoleType.EXECUTOR);
-    }
+    oldExecutor.requireValidUserAddress();
+    newExecutor.requireValidUserAddress();
+
+    _updateExecutor(newExecutor);
+    _removeUser(oldExecutor);
+    _addUser(newExecutor, RoleType.EXECUTOR);
   }
 
   /**
@@ -112,10 +113,10 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    */
   function removeExecutor() public onlyOwner {
     address oldExecutor = executor();
-    if (oldExecutor.isValidUserAddress()) {
-      _removeExecutor();
-      _removeUser(oldExecutor);
-    }
+    oldExecutor.requireValidUserAddress();
+
+    _removeExecutor();
+    _removeUser(oldExecutor);
   }
 
   /**
@@ -138,10 +139,25 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   function removeSigner(
     address signer
   ) public onlyOwner {
-    if (signer.isValidUserAddress()) {
-      _removeSigner(signer);
-      _removeUser(signer);
-    }
+    signer.requireValidUserAddress();
+    _removeSigner(signer);
+    _removeUser(signer);
+  }
+
+  /**
+   * @notice Allows an executor to approve the owner override after the timelock has elapsed.
+   */
+  function approveOwnerOverride() public onlyExecutor {
+    address currentOwner = owner();
+    address currentExecutor = _msgSender();
+    uint256 currentTimestamp = block.timestamp;
+
+    _approveOwnerOverride(currentOwner, currentTimestamp, ownerOverrideTimelock);
+    _changeOwner();
+
+    _removeUser(currentOwner);
+    _removeUser(currentExecutor);
+    _addUser(currentExecutor, RoleType.OWNER);
   }
 
   /**
@@ -151,7 +167,7 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    */
   function _isUser(
     address user
-  ) internal view returns (bool status) {
+  ) private view returns (bool status) {
     status = _users[user].user != address(0);
   }
 
@@ -163,6 +179,7 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    * @dev This is a private function to store user details.
    */
   function _addUser(address user, RoleType role) private {
+    user.requireValidUserAddress();
     _users[user] = UserProfile(user, role, block.timestamp);
     _userCount.increment();
   }
@@ -175,9 +192,9 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
     address user
   ) private {
     UserProfile storage profile = _users[user];
-    if (profile.user.isValidUserAddress()) {
-      delete _users[user];
-      _userCount.decrement();
-    }
+    profile.user.requireValidUserAddress();
+
+    delete _users[user];
+    _userCount.decrement();
   }
 }

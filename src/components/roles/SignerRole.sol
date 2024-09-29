@@ -69,12 +69,12 @@ abstract contract SignerRole is AccessControl, ISignerRole {
     address newSigner
   ) internal onlyRole(OWNER_ROLE) {
     require(!isSigner(newSigner), 'SignerRole: Signer already exists');
-    if (newSigner.isValidUserAddress()) {
-      grantRole(SIGNER_ROLE, newSigner);
-      _signers.push(newSigner);
-      _signerCount.increment();
-      emit SignerAdded(newSigner);
-    }
+    newSigner.requireValidUserAddress();
+
+    grantRole(SIGNER_ROLE, newSigner);
+    _signers.push(newSigner);
+    _signerCount.increment();
+    emit SignerAdded(newSigner);
   }
 
   /**

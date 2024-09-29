@@ -7,11 +7,13 @@ pragma solidity ^0.8.27;
  * @notice RoleType helps differentiate between Owner, Executor, and Signer roles.
  *
  * @dev Enum representing the different roles in the MultiSig Vault contract.
- * - OWNER    0: Represents the Owner role
- * - EXECUTOR 1: Represents the Executor role
- * - SIGNER   2: Represents the Signer role
+ * - INVALID  0: Represents an invalid role
+ * - OWNER    1: Represents the Owner role
+ * - EXECUTOR 2: Represents the Executor role
+ * - SIGNER   3: Represents the Signer role
  */
 enum RoleType {
+  INVALID,
   OWNER,
   EXECUTOR,
   SIGNER

@@ -10,19 +10,20 @@ import '@openzeppelin/contracts/utils/Address.sol';
 library AddressUtils {
   using Address for address;
 
-  /// @dev Error thrown when the provided user address is not valid (zero).
+  /**
+   * @dev Error thrown when the provided user address is not valid.
+   * @param account The invalid user address
+   */
   error InvalidUserAddress(address account);
 
   /**
-   * @notice Checks if the address is valid (i.e., not a zero address).
-   * @param account The address to validate.
-   * @return status Returns true if the address is valid, otherwise false.
+   * @notice Ensure a user address is valid (i.e., not a zero address).
+   * @param account The user address to validate.
    */
-  function isValidUserAddress(
+  function requireValidUserAddress(
     address account
-  ) internal pure returns (bool status) {
-    status = account != address(0);
-    if (!status) {
+  ) internal pure {
+    if (account == address(0)) {
       revert InvalidUserAddress(account);
     }
   }

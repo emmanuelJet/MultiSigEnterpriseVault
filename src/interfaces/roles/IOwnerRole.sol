@@ -20,12 +20,6 @@ interface IOwnerRole {
   error AccessControlUnauthorizedOwner(address account);
 
   /**
-   * @dev Error thrown when an invalid default owner is set.
-   * @param defaultOwner The invalid owner address.
-   */
-  error AccessControlInvalidDefaultOwner(address defaultOwner);
-
-  /**
    * @dev Event emitted when the owner override timelock is increased.
    * @param newLimit The new timelock limit for owner override.
    */
@@ -36,4 +30,11 @@ interface IOwnerRole {
    * @param newLimit The new timelock limit for owner override.
    */
   event OwnerOverrideTimelockDecreased(uint256 newLimit);
+
+  /**
+   * @dev Event emitted when an owner is updated.
+   * @param oldOwner The old owner address.
+   * @param newOwner The new owner address.
+   */
+  event OwnerChanged(address indexed oldOwner, address indexed newOwner);
 }

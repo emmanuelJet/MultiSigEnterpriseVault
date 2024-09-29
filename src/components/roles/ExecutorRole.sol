@@ -2,9 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {EXECUTOR_ROLE, OWNER_ROLE} from '../../utilities/VaultConstants.sol';
 import {IExecutorRole} from '../../interfaces/roles/IExecutorRole.sol';
 import {AddressUtils} from '../../libraries/AddressUtils.sol';
+import {SafeMath} from '../../libraries/SafeMath.sol';
+import '../../utilities/VaultConstants.sol';
 
 /**
  * @title Executor Role Contract
@@ -13,9 +14,16 @@ import {AddressUtils} from '../../libraries/AddressUtils.sol';
  */
 abstract contract ExecutorRole is AccessControl, IExecutorRole {
   using AddressUtils for address;
+  using SafeMath for uint256;
 
   /// @dev Stores the address of the current executor.
   address private _executor;
+
+  /// @dev Timestamp of when the owner override was initiated.
+  uint256 private overrideInitiatedAt;
+
+  /// @dev Status to indicate if an override is active.
+  bool public isOverrideActive;
 
   /**
    * @dev Modifier to restrict access to functions to only the executor.
@@ -37,6 +45,20 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
   }
 
   /**
+   * @notice Initiates the owner override process with a timelock.
+   * @dev Only callable by the executor. The override process will start and only be executable after the timelock period has passed.
+   */
+  function initiateOwnerOverride() public onlyRole(EXECUTOR_ROLE) {
+    if (isOverrideActive) {
+      revert OwnerOverrideAlreadyActive();
+    }
+
+    overrideInitiatedAt = block.timestamp;
+    isOverrideActive = true;
+    emit OwnerOverrideInitiated(_msgSender(), overrideInitiatedAt);
+  }
+
+  /**
    * @notice Adds a new executor.
    * @param newExecutor The address of the new executor.
    * @dev Only callable by the owner.
@@ -44,12 +66,15 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
   function _addExecutor(
     address newExecutor
   ) internal onlyRole(OWNER_ROLE) {
-    require(_executor == address(0), 'ExecutorRole: Executor already exists');
-    if (newExecutor.isValidUserAddress()) {
-      grantRole(EXECUTOR_ROLE, newExecutor);
-      _executor = newExecutor;
-      emit ExecutorAdded(newExecutor);
+    if (_executor != address(0)) {
+      revert ExecutorAlreadyExists();
     }
+
+    _validateExecutorAddress(newExecutor);
+    grantRole(EXECUTOR_ROLE, newExecutor);
+    _executor = newExecutor;
+
+    emit ExecutorAdded(newExecutor);
   }
 
   /**
@@ -58,11 +83,10 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
    */
   function _removeExecutor() internal onlyRole(OWNER_ROLE) {
     address oldExecutor = _executor;
-    if (oldExecutor.isValidUserAddress()) {
-      revokeRole(EXECUTOR_ROLE, oldExecutor);
-      _executor = address(0);
-      emit ExecutorRemoved(oldExecutor);
-    }
+    oldExecutor.requireValidUserAddress();
+    revokeRole(EXECUTOR_ROLE, oldExecutor);
+    _executor = address(0);
+    emit ExecutorRemoved(oldExecutor);
   }
 
   /**
@@ -74,15 +98,61 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
     address newExecutor
   ) internal onlyRole(OWNER_ROLE) {
     address oldExecutor = _executor;
-    if (oldExecutor.isValidUserAddress() && newExecutor.isValidUserAddress()) {
-      // Revoke old executor role and assign to the new executor
-      revokeRole(EXECUTOR_ROLE, oldExecutor);
-      grantRole(EXECUTOR_ROLE, newExecutor);
+    oldExecutor.requireValidUserAddress();
 
-      // Update the executor address
-      _executor = newExecutor;
+    _validateExecutorAddress(newExecutor);
+    revokeRole(EXECUTOR_ROLE, oldExecutor);
+    grantRole(EXECUTOR_ROLE, newExecutor);
 
-      emit ExecutorUpdated(oldExecutor, newExecutor);
+    _executor = newExecutor;
+
+    emit ExecutorUpdated(oldExecutor, newExecutor);
+  }
+
+  /**
+   * @notice Internal function to approve the owner override after the timelock has elapsed.
+   *
+   * @param ownerAddress The address of the current owner.
+   * @param executionTimestamp The time at which the owner override is executed.
+   * @param ownerOverrideTimelock The duration after which the override can be approved.
+   *
+   * @dev This is called from the `User` contract to execute the owner override.
+   * Requirements
+   * - The owner override is active
+   * - The override timelock has passed
+   */
+  function _approveOwnerOverride(
+    address ownerAddress,
+    uint256 executionTimestamp,
+    uint256 ownerOverrideTimelock
+  ) internal onlyRole(EXECUTOR_ROLE) {
+    if (!isOverrideActive) {
+      revert OwnerOverrideNotActive();
+    }
+
+    uint256 requiredTime = overrideInitiatedAt.add(ownerOverrideTimelock);
+    uint256 elapsedTime = executionTimestamp.subtract(overrideInitiatedAt);
+    if (elapsedTime < ownerOverrideTimelock) {
+      revert OwnerOverrideTimelockNotElapsed(executionTimestamp, requiredTime);
+    }
+
+    address newOwner = _msgSender();
+    _revokeRole(OWNER_ROLE, ownerAddress);
+    _revokeRole(EXECUTOR_ROLE, newOwner);
+    _grantRole(OWNER_ROLE, newOwner);
+
+    isOverrideActive = false;
+    _executor = address(0);
+
+    emit OwnerOverrideApproved(newOwner, executionTimestamp);
+  }
+
+  function _validateExecutorAddress(
+    address newExecutor
+  ) private view {
+    newExecutor.requireValidUserAddress();
+    if (hasRole(OWNER_ROLE, newExecutor) || hasRole(SIGNER_ROLE, newExecutor)) {
+      revert InvalidExecutorUser(newExecutor);
     }
   }
 }
