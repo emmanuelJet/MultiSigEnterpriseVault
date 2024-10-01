@@ -1,4 +1,4 @@
-<!--- 
+<!---
 Please read this!
 
 Before opening a new pull request (PR), make sure you are merging to the main branch, have your GitHub Issue ID (GID), and understand the popular Git Category Flags (GCF). This will guide the creation of a perfect PR.
@@ -43,7 +43,7 @@ Please replace this line with your PR overview description to include a summary 
 <summary>Automation</summary>
 
 ### Relevant Issues
-<!-- Link relevant GID(s) for which their acceptance criteria are covered by this PR, either as blockers or parent. -->
+<!-- Link relevant GID(s) for which their acceptance criteria are covered by this PR, either as blockers or affiliates. -->
 -
 
 ### Before Merging

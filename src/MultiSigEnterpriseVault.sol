@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {User} from './components/User.sol';
-import {AddressUtils} from './libraries/AddressUtils.sol';
 import {IMultiSigEnterpriseVault} from './interfaces/IMultiSigEnterpriseVault.sol';
+import {MultiSigTransaction} from './components/MultiSigTransaction.sol';
+import {AddressUtils} from './libraries/AddressUtils.sol';
 
 /**
  * @title MultiSig Enterprise Vault Contract
  * @author Emmanuel Joseph (JET)
  */
-contract MultiSigEnterpriseVault is User, IMultiSigEnterpriseVault {
-  /// @notice The current threshold required for signatory approval.
-  uint256 public signatoryThreshold;
-
+contract MultiSigEnterpriseVault is MultiSigTransaction, IMultiSigEnterpriseVault {
   /**
    * @dev Initializes the MultiSigEnterpriseVault with the owner, initial signatory threshold, and owner override limit.
    * @param owner The address of the contract owner.
@@ -23,9 +20,8 @@ contract MultiSigEnterpriseVault is User, IMultiSigEnterpriseVault {
     address owner,
     uint256 initialThreshold,
     uint256 initialOwnerOverrideLimit
-  ) User(owner, initialOwnerOverrideLimit) {
+  ) MultiSigTransaction(owner, initialThreshold, initialOwnerOverrideLimit) {
     AddressUtils.requireValidUserAddress(owner);
-    signatoryThreshold = initialThreshold;
   }
 
   /**

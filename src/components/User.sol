@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import '../libraries/Counters.sol';
+import '../utilities/VaultConstants.sol';
 import {IUser} from '../interfaces/IUser.sol';
 import {OwnerRole} from './roles/OwnerRole.sol';
 import {SignerRole} from './roles/SignerRole.sol';
@@ -39,11 +40,47 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
 
   /**
    * @dev Modifier to restrict access to functions to only vault users.
-   * Reverts with `AccessControlUnauthorizedSigner` if the caller is not the signer.
+   * Reverts with `InvalidUserProfile` if the caller is not a user.
    */
   modifier onlyUser() {
     if (!_isUser(_msgSender())) {
       revert InvalidUserProfile(_msgSender());
+    }
+    _;
+  }
+
+  /**
+   * @dev Modifier to ensure a valid vault user.
+   * Reverts with `InvalidUserProfile` if the given user address is invalid.
+   * @param user The user address to validate.
+   */
+  modifier validUser(
+    address user
+  ) {
+    if (!_isUser(user)) {
+      revert InvalidUserProfile(user);
+    }
+    _;
+  }
+
+  /**
+   * @dev Modifier to restrict access to functions to valid signers.
+   * Reverts with `UnauthorizedTransactionSigner` if the caller is not an authorized transaction signer.
+   */
+  modifier validSigner() {
+    if (!isSigner(_msgSender()) && !hasRole(OWNER_ROLE, _msgSender())) {
+      revert UnauthorizedTransactionSigner(_msgSender());
+    }
+    _;
+  }
+
+  /**
+   * @dev Modifier to restrict access to functions to valid executors.
+   * Reverts with `UnauthorizedTransactionExecutor` if the caller is not an authorized transaction executor.
+   */
+  modifier validExecutor() {
+    if (!hasRole(EXECUTOR_ROLE, _msgSender()) && !hasRole(OWNER_ROLE, _msgSender())) {
+      revert UnauthorizedTransactionExecutor(_msgSender());
     }
     _;
   }
@@ -68,10 +105,7 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    */
   function getUserProfile(
     address user
-  ) public view onlyOwner returns (UserProfile memory) {
-    if (!_isUser(user)) {
-      revert InvalidUserProfile(user);
-    }
+  ) public view validUser(user) onlyOwner returns (UserProfile memory) {
     return _users[user];
   }
 
@@ -190,10 +224,7 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    */
   function _removeUser(
     address user
-  ) private {
-    UserProfile storage profile = _users[user];
-    profile.user.requireValidUserAddress();
-
+  ) private validUser(user) {
     delete _users[user];
     _userCount.decrement();
   }

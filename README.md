@@ -42,6 +42,16 @@ forge test
 forge snapshot
 ```
 
+## Flatten Contracts for Verification
+
+To flatten the contract for verification (e.g., on [Remix IDE](https://remix.ethereum.org/)), run the flatten command:
+
+```bash
+forge flatten ./src/MultiSigEnterpriseVault.sol > ./.private/MultiSigEnterpriseVault.sol
+```
+
+This command outputs a single Solidity file containing all dependencies.
+
 ## License
 
 ```md
