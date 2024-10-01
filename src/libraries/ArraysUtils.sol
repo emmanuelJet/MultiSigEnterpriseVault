@@ -20,10 +20,7 @@ library ArraysUtils {
    * @param array The array to lookup
    * @return index The index of the found element
    */
-  function arrayElementIndexLookup(
-    uint256 element,
-    uint256[] memory array
-  ) internal pure returns (uint256 index) {
+  function arrayElementIndexLookup(uint256 element, uint256[] memory array) internal pure returns (uint256 index) {
     index = 0;
     while (array[index] != element) {
       index++;
@@ -36,10 +33,7 @@ library ArraysUtils {
    * @param array The array to lookup
    * @return index The index of the found element
    */
-  function arrayElementIndexLookup(
-    address element,
-    address[] memory array
-  ) internal pure returns (uint256 index) {
+  function arrayElementIndexLookup(address element, address[] memory array) internal pure returns (uint256 index) {
     index = 0;
     while (array[index] != element) {
       index++;
@@ -54,10 +48,7 @@ library ArraysUtils {
    * Requirements:
    * - Ensures the `index` is available in the given array
    */
-  function removeElementFromArray(
-    uint256 index,
-    uint256[] storage array
-  ) internal {
+  function removeElementFromArray(uint256 index, uint256[] storage array) internal {
     if (index > array.length) revert ArrayIndexOutOfBound(index);
     for (uint256 i = index; i < array.length - 1; i++) {
       array[i] = array[i + 1];
@@ -74,10 +65,7 @@ library ArraysUtils {
    * Requirements:
    * - Ensures the `index` is available in the given array
    */
-  function removeElementFromArray(
-    uint256 index,
-    address[] storage array
-  ) internal {
+  function removeElementFromArray(uint256 index, address[] storage array) internal {
     if (index > array.length) revert ArrayIndexOutOfBound(index);
     for (uint256 i = index; i < array.length - 1; i++) {
       array[i] = array[i + 1];

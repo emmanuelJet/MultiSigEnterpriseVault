@@ -89,7 +89,9 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
    * @param token The ERC20 token address.
    * @return The token balance of the contract.
    */
-  function getTokenBalance(address token) public view returns (uint256) {
+  function getTokenBalance(
+    address token
+  ) public view returns (uint256) {
     AddressUtils.requireValidTokenAddress(token);
     return IERC20(token).balanceOf(address(this));
   }
@@ -214,7 +216,9 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
   ) public validTransaction(transactionId) validExecutor {
     Transaction storage txn = _transactions[transactionId];
     if (txn.isExecuted) revert TransactionAlreadyExecuted(transactionId);
-    if (txn.approvals.current() < signatoryThreshold) revert InsufficientApprovals(signatoryThreshold, txn.approvals.current());
+    if (txn.approvals.current() < signatoryThreshold) {
+      revert InsufficientApprovals(signatoryThreshold, txn.approvals.current());
+    }
     if (hasRole(OWNER_ROLE, _msgSender())) {
       if (!approvals[transactionId][_msgSender()]) revert TransactionNotApproved(transactionId);
     }

@@ -44,11 +44,7 @@ interface IMultiSigTransaction {
    * @param token The token contract address (0x0 for ETH).
    * @param amount The received token amount.
    */
-  event FundsReceived(
-    address indexed from,
-    address token,
-    uint256 amount
-  );
+  event FundsReceived(address indexed from, address token, uint256 amount);
 
   /**
    * @dev Event emitted when a transaction is initiated.
@@ -59,11 +55,7 @@ interface IMultiSigTransaction {
    * @param value The value to be transferred.
    */
   event TransactionInitiated(
-    uint256 indexed transactionId,
-    address indexed initiator,
-    address indexed target,
-    address token,
-    uint256 value
+    uint256 indexed transactionId, address indexed initiator, address indexed target, address token, uint256 value
   );
 
   /**

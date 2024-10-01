@@ -95,7 +95,7 @@ abstract contract SignerRole is AccessControl, ISignerRole {
     uint256 signerIndex = ArraysUtils.arrayElementIndexLookup(signer, _signers);
     ArraysUtils.removeElementFromArray(signerIndex, _signers);
     _signerCount.decrement();
-    
+
     emit SignerRemoved(signer);
   }
 }
