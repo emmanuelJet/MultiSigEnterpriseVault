@@ -12,4 +12,16 @@ interface IUser {
    * @param user The address of the user with an invalid profile.
    */
   error InvalidUserProfile(address user);
+
+  /**
+   * @dev Error thrown when an unauthorized account attempts to sign a transaction.
+   * @param account The address of the unauthorized account.
+   */
+  error UnauthorizedTransactionSigner(address account);
+
+  /**
+   * @dev Error thrown when an unauthorized account attempts to execute a transaction.
+   * @param account The address of the unauthorized account.
+   */
+  error UnauthorizedTransactionExecutor(address account);
 }

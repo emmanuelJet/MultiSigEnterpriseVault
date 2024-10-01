@@ -5,6 +5,7 @@ import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
 import {SIGNER_ROLE, OWNER_ROLE} from '../../utilities/VaultConstants.sol';
 import {ISignerRole} from '../../interfaces/roles/ISignerRole.sol';
 import {AddressUtils} from '../../libraries/AddressUtils.sol';
+import {ArraysUtils} from '../../libraries/ArraysUtils.sol';
 import '../../libraries/Counters.sol';
 
 /**
@@ -24,7 +25,7 @@ abstract contract SignerRole is AccessControl, ISignerRole {
 
   /**
    * @dev Modifier to restrict access to functions to only the signer.
-   * Reverts with `AccessControlUnauthorizedSigner` if the caller is not the signer.
+   * Reverts with `AccessControlUnauthorizedSigner` if the caller is not a signer.
    */
   modifier onlySigner() {
     if (!isSigner(_msgSender())) {
@@ -91,15 +92,9 @@ abstract contract SignerRole is AccessControl, ISignerRole {
     revokeRole(SIGNER_ROLE, signer);
 
     // Remove signer from the _signers array
-    uint256 _totalSigners = totalSigners();
-    for (uint256 i = 0; i < _totalSigners; i++) {
-      if (_signers[i] == signer) {
-        _signers[i] = _signers[_totalSigners - 1]; // Move the last element into the place of the removed signer
-        _signers.pop(); // Remove the last element
-        _signerCount.decrement();
-        break;
-      }
-    }
+    uint256 signerIndex = ArraysUtils.arrayElementIndexLookup(signer, _signers);
+    ArraysUtils.removeElementFromArray(signerIndex, _signers);
+    _signerCount.decrement();
 
     emit SignerRemoved(signer);
   }
