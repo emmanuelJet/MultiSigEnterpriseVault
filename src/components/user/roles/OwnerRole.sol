@@ -2,8 +2,8 @@
 pragma solidity ^0.8.27;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {IOwnerRole} from '../../interfaces/roles/IOwnerRole.sol';
-import {OWNER_ROLE} from '../../utilities/VaultConstants.sol';
+import {IOwnerRole} from '../../../interfaces/user/roles/IOwnerRole.sol';
+import {OWNER_ROLE} from '../../../utilities/VaultConstants.sol';
 
 /**
  * @title Owner Role Contract

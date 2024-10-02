@@ -2,10 +2,10 @@
 pragma solidity ^0.8.27;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {IExecutorRole} from '../../interfaces/roles/IExecutorRole.sol';
-import {AddressUtils} from '../../libraries/AddressUtils.sol';
-import {SafeMath} from '../../libraries/SafeMath.sol';
-import '../../utilities/VaultConstants.sol';
+import {IExecutorRole} from '../../../interfaces/user/roles/IExecutorRole.sol';
+import {AddressUtils} from '../../../libraries/AddressUtils.sol';
+import {SafeMath} from '../../../libraries/SafeMath.sol';
+import '../../../utilities/VaultConstants.sol';
 
 /**
  * @title Executor Role Contract

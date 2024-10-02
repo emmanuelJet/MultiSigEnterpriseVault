@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import '../libraries/Counters.sol';
-import '../utilities/VaultConstants.sol';
-import {IUser} from '../interfaces/IUser.sol';
+import '../../libraries/Counters.sol';
+import '../../utilities/VaultConstants.sol';
 import {OwnerRole} from './roles/OwnerRole.sol';
 import {SignerRole} from './roles/SignerRole.sol';
-import {RoleType} from '../utilities/VaultEnums.sol';
 import {ExecutorRole} from './roles/ExecutorRole.sol';
-import {UserProfile} from '../utilities/VaultStructs.sol';
-import {AddressUtils} from '../libraries/AddressUtils.sol';
+import {IUser} from '../../interfaces/user/IUser.sol';
+import {RoleType} from '../../utilities/VaultEnums.sol';
+import {UserProfile} from '../../utilities/VaultStructs.sol';
+import {AddressUtils} from '../../libraries/AddressUtils.sol';
 
 /**
  * @title User Contract

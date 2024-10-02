@@ -2,11 +2,11 @@
 pragma solidity ^0.8.27;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {SIGNER_ROLE, OWNER_ROLE} from '../../utilities/VaultConstants.sol';
-import {ISignerRole} from '../../interfaces/roles/ISignerRole.sol';
-import {AddressUtils} from '../../libraries/AddressUtils.sol';
-import {ArraysUtils} from '../../libraries/ArraysUtils.sol';
-import '../../libraries/Counters.sol';
+import {SIGNER_ROLE, OWNER_ROLE} from '../../../utilities/VaultConstants.sol';
+import {ISignerRole} from '../../../interfaces/user/roles/ISignerRole.sol';
+import {AddressUtils} from '../../../libraries/AddressUtils.sol';
+import {ArraysUtils} from '../../../libraries/ArraysUtils.sol';
+import '../../../libraries/Counters.sol';
 
 /**
  * @title Signer Role Contract

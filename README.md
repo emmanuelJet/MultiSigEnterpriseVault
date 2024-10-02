@@ -4,10 +4,20 @@ An open-source, enterprise-grade Multi-Signature Vault smart contract developed 
 
 ## Features
 
-- Multi-signature functionality with flexible threshold settings.
-- Separate timelocks for transactions and owner overrides.
+- Multi-Signature Vault functionality to manage **ETH** and **ERC20** tokens.
+- Separate timelocks for transactions and owner overrides with delays.
 - Role-based access control (Owner, Executor, Signers).
 - Secure self-destruct mechanism with safety checks.
+- Flexible and administrative threshold settings.
+
+## Use Cases
+
+The MultiSigEnterpriseVault is ideal for:
+
+- **Enterprise Teams**: Organizations that require multiple approvals before executing high-value transactions, ensuring decentralized control.
+- **DAOs (Decentralised Autonomous Organizations)**: Enables decentralized decision-making with threshold-based approvals for critical actions.
+- **Family or Joint Accounts**: Multiple signatories can manage shared assets securely with transaction approval mechanisms.
+- **Fund Custodians**: Securely manage pooled funds with transaction timelock to prevent unilateral decisions.
 
 ## Getting Started
 

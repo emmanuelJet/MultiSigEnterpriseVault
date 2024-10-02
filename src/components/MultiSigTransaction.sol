@@ -9,7 +9,7 @@ import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IMultiSigTransaction} from '../interfaces/IMultiSigTransaction.sol';
 import {Transaction} from '../utilities/VaultStructs.sol';
 import {ArraysUtils} from '../libraries/ArraysUtils.sol';
-import {User} from './User.sol';
+import {User} from './user/User.sol';
 
 /**
  * @title MultiSigTransaction
