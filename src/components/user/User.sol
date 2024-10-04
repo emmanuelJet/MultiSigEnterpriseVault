@@ -7,6 +7,7 @@ import {OwnerRole} from './roles/OwnerRole.sol';
 import {SignerRole} from './roles/SignerRole.sol';
 import {ExecutorRole} from './roles/ExecutorRole.sol';
 import {IUser} from '../../interfaces/user/IUser.sol';
+import {SafeMath} from '../../libraries/SafeMath.sol';
 import {RoleType} from '../../utilities/VaultEnums.sol';
 import {UserProfile} from '../../utilities/VaultStructs.sol';
 import {AddressUtils} from '../../libraries/AddressUtils.sol';
@@ -65,22 +66,11 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
 
   /**
    * @dev Modifier to restrict access to functions to valid signers.
-   * Reverts with `UnauthorizedTransactionSigner` if the caller is not an authorized transaction signer.
+   * Reverts with `UnauthorizedMultiSigSigner` if the caller is not an authorized multi-sig signer.
    */
   modifier validSigner() {
     if (!isSigner(_msgSender()) && !hasRole(OWNER_ROLE, _msgSender())) {
-      revert UnauthorizedTransactionSigner(_msgSender());
-    }
-    _;
-  }
-
-  /**
-   * @dev Modifier to restrict access to functions to valid executors.
-   * Reverts with `UnauthorizedTransactionExecutor` if the caller is not an authorized transaction executor.
-   */
-  modifier validExecutor() {
-    if (!hasRole(EXECUTOR_ROLE, _msgSender()) && !hasRole(OWNER_ROLE, _msgSender())) {
-      revert UnauthorizedTransactionExecutor(_msgSender());
+      revert UnauthorizedMultiSigSigner(_msgSender());
     }
     _;
   }
@@ -154,31 +144,6 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   }
 
   /**
-   * @notice Adds a new signer user.
-   * @param newSigner The address of the new signer.
-   * @dev Only callable by the owner.
-   */
-  function addSigner(
-    address newSigner
-  ) public onlyOwner {
-    _addSigner(newSigner);
-    _addUser(newSigner, RoleType.SIGNER);
-  }
-
-  /**
-   * @notice Removes an existing signer and deletes the user's profile.
-   * @param signer The address of the signer to be removed.
-   * @dev Only callable by the owner.
-   */
-  function removeSigner(
-    address signer
-  ) public onlyOwner {
-    signer.requireValidUserAddress();
-    _removeSigner(signer);
-    _removeUser(signer);
-  }
-
-  /**
    * @notice Allows an executor to approve the owner override after the timelock has elapsed.
    */
   function approveOwnerOverride() public onlyExecutor {
@@ -195,6 +160,31 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   }
 
   /**
+   * @notice Adds a new signer user.
+   * @param newSigner The address of the new signer.
+   * @dev Only callable by the owner.
+   */
+  function _addSigner(
+    address newSigner
+  ) internal override validExecutor {
+    super._addSigner(newSigner);
+    _addUser(newSigner, RoleType.SIGNER);
+  }
+
+  /**
+   * @notice Removes an existing signer and deletes the user's profile.
+   * @param signer The address of the signer to be removed.
+   * @dev Only callable by the owner.
+   */
+  function _removeSigner(
+    address signer
+  ) internal override validExecutor {
+    signer.requireValidUserAddress();
+    super._removeSigner(signer);
+    _removeUser(signer);
+  }
+
+  /**
    * @notice Checks if an address is a user.
    * @param user The address to check.
    * @return status True if the address is a user, otherwise false.
@@ -203,6 +193,14 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
     address user
   ) private view returns (bool status) {
     status = _users[user].user != address(0);
+  }
+
+  /**
+   * @notice Returns the total number of valid signers.
+   * @return uint256 The total number of valid signers.
+   */
+  function _totalValidSigners() internal view returns (uint256) {
+    return SafeMath.add(totalSigners(), 1);
   }
 
   /**

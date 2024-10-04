@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {SIGNER_ROLE, OWNER_ROLE} from '../../../utilities/VaultConstants.sol';
 import {ISignerRole} from '../../../interfaces/user/roles/ISignerRole.sol';
 import {AddressUtils} from '../../../libraries/AddressUtils.sol';
-import {ArraysUtils} from '../../../libraries/ArraysUtils.sol';
+import '../../../utilities/VaultConstants.sol';
 import '../../../libraries/Counters.sol';
 
 /**
@@ -14,14 +14,15 @@ import '../../../libraries/Counters.sol';
  * @dev Abstract contract providing the logic for the Signer role in the MultiSigVault system.
  */
 abstract contract SignerRole is AccessControl, ISignerRole {
+  using EnumerableSet for EnumerableSet.AddressSet;
   using Counters for Counters.Counter;
   using AddressUtils for address;
 
   /// @notice Using Counter library for total signers
   Counters.Counter private _signerCount;
 
-  /// @dev Stores store all signer addresses.
-  address[] private _signers;
+  /// @dev Using EnumerableSet library for signer addresses.
+  EnumerableSet.AddressSet private _signers;
 
   /**
    * @dev Modifier to restrict access to functions to only the signer.
@@ -35,6 +36,17 @@ abstract contract SignerRole is AccessControl, ISignerRole {
   }
 
   /**
+   * @dev Modifier to restrict access to functions to valid executors.
+   * Reverts with `UnauthorizedMultiSigExecutor` if the caller is not an authorized multi-sig executor.
+   */
+  modifier validExecutor() {
+    if (!hasRole(EXECUTOR_ROLE, _msgSender()) && !hasRole(OWNER_ROLE, _msgSender())) {
+      revert UnauthorizedMultiSigExecutor(_msgSender());
+    }
+    _;
+  }
+
+  /**
    * @notice Checks if an address is a signer.
    * @param signer The address to check.
    * @return status True if the address is a signer, otherwise false.
@@ -42,12 +54,12 @@ abstract contract SignerRole is AccessControl, ISignerRole {
   function isSigner(
     address signer
   ) public view returns (bool status) {
-    status = hasRole(SIGNER_ROLE, signer);
+    status = _signers.contains(signer) && hasRole(SIGNER_ROLE, signer);
   }
 
   /**
    * @notice Returns the total number of signers.
-   * @return uint256 The number of signers in the system.
+   * @return uint256 The number of signers in the contract.
    */
   function totalSigners() public view returns (uint256) {
     return _signerCount.current();
@@ -58,22 +70,22 @@ abstract contract SignerRole is AccessControl, ISignerRole {
    * @return address[] The list of signers' addresses.
    */
   function getSigners() public view returns (address[] memory) {
-    return _signers;
+    return _signers.values();
   }
 
   /**
    * @notice Adds a new signer.
    * @param newSigner The address of the new signer.
-   * @dev Only callable by the owner.
+   * @dev Only callable by a valid executor.
    */
   function _addSigner(
     address newSigner
-  ) internal onlyRole(OWNER_ROLE) {
-    require(!isSigner(newSigner), 'SignerRole: Signer already exists');
-    newSigner.requireValidUserAddress();
+  ) internal virtual validExecutor {
+    _validateSignerAddress(newSigner);
+    if (isSigner(newSigner)) revert SignerAlreadyExists(newSigner);
 
-    grantRole(SIGNER_ROLE, newSigner);
-    _signers.push(newSigner);
+    _grantRole(SIGNER_ROLE, newSigner);
+    _signers.add(newSigner);
     _signerCount.increment();
     emit SignerAdded(newSigner);
   }
@@ -81,21 +93,35 @@ abstract contract SignerRole is AccessControl, ISignerRole {
   /**
    * @notice Removes the current signer.
    * @param signer The address of the signer to be removed.
-   * @dev Only callable by the owner.
+   * @dev Only callable by a valid executor.
    */
   function _removeSigner(
     address signer
-  ) internal onlyRole(OWNER_ROLE) {
-    require(isSigner(signer), 'SignerRole: Signer does not exist');
+  ) internal virtual validExecutor {
+    if (!isSigner(signer)) revert SignerDoesNotExist(signer);
 
-    /// Remove Signer ROle
-    revokeRole(SIGNER_ROLE, signer);
-
-    // Remove signer from the _signers array
-    uint256 signerIndex = ArraysUtils.arrayElementIndexLookup(signer, _signers);
-    ArraysUtils.removeElementFromArray(signerIndex, _signers);
+    _revokeRole(SIGNER_ROLE, signer);
+    _signers.remove(signer);
     _signerCount.decrement();
-
     emit SignerRemoved(signer);
+  }
+
+  /**
+   * @dev Validates the provided signer address.
+   *
+   * This function checks if the given signer address is a valid user address
+   * and ensures that the address does not have the OWNER_ROLE or SIGNER_ROLE.
+   * If the address has either of these roles, the function reverts with an
+   * `InvalidSignerUser` error.
+   *
+   * @param signer The address of the signer to validate.
+   */
+  function _validateSignerAddress(
+    address signer
+  ) private view {
+    signer.requireValidUserAddress();
+    if (hasRole(OWNER_ROLE, signer) || hasRole(EXECUTOR_ROLE, signer)) {
+      revert InvalidSignerUser(signer);
+    }
   }
 }

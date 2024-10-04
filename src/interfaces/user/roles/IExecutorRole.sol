@@ -15,8 +15,14 @@ interface IExecutorRole {
 
   /**
    * @dev Error thrown when attempting to add a new executor with an existing user role.
+   * @param executor The invalid executor address.
    */
-  error InvalidExecutorUser(address account);
+  error InvalidExecutorUser(address executor);
+
+  /**
+   * @dev Error thrown when the contract does not have a valid executor.
+   */
+  error MissingExecutor();
 
   /**
    * @dev Error thrown when attempting to add a new executor when one exists.

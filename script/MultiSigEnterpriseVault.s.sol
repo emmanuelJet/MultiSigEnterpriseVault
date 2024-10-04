@@ -14,10 +14,12 @@ contract MultiSigEnterpriseVaultScript is Script {
     vm.startBroadcast();
 
     uint256 initialThreshold = 3;
-    uint256 initialOwnerOverrideLimit = 3 days;
+    uint256 initialMultiSigTimelock = 1 days;
+    uint256 initialOwnerOverrideTimelock = 3 days;
     address vaultOwner = makeAddr('vaultOwner');
 
-    vault = new MultiSigEnterpriseVault(vaultOwner, initialThreshold, initialOwnerOverrideLimit);
+    vault =
+      new MultiSigEnterpriseVault(vaultOwner, initialThreshold, initialMultiSigTimelock, initialOwnerOverrideTimelock);
     vaultAddress = address(vault);
 
     console.log('MultiSigVault Contract Address:', vaultAddress);

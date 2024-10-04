@@ -6,20 +6,25 @@ import '../libraries/AddressUtils.sol';
 import '../utilities/VaultConstants.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {IMultiSigTransaction} from '../interfaces/IMultiSigTransaction.sol';
+import {ERC20Validator} from '../libraries/ERC20Validator.sol';
 import {Transaction} from '../utilities/VaultStructs.sol';
-import {ArraysUtils} from '../libraries/ArraysUtils.sol';
-import {User} from './user/User.sol';
+import {MultiSigTimelock} from './MultiSigTimelock.sol';
+import {SafeMath} from '../libraries/SafeMath.sol';
 
 /**
  * @title MultiSigTransaction
+ * @author Emmanuel Joseph (JET)
  * @dev Manages transaction initiation, approval, and execution for ETH and ERC20 transfers.
  */
-abstract contract MultiSigTransaction is User, IMultiSigTransaction {
+abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction {
+  using EnumerableSet for EnumerableSet.AddressSet;
   using Counters for Counters.Counter;
+  using SafeMath for uint256;
 
-  /// @notice The minimum number of approvals to execute a transaction
-  uint256 public signatoryThreshold;
+  /// @notice Stores the check for a pending transaction that requires approvals
+  bool private _isPendingTransaction;
 
   /// @notice Using Counter library for total transactions
   Counters.Counter private _transactionCount;
@@ -27,33 +32,44 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
   /// @notice Mapping to store all transactions by their ID
   mapping(uint256 => Transaction) private _transactions;
 
-  /// @notice Mapping to track approvals for each transaction by signers
-  mapping(uint256 => mapping(address => bool)) public approvals;
-
   /**
-   * @dev Initializes the `MultiSigTransaction` and `User` contracts.
+   * @dev Initializes the `MultiSigTransaction` and `MultiSigTimelock` contracts.
    * @param owner The address of the contract owner.
    * @param initialThreshold The initial threshold for signatory approval.
-   * @param initialOwnerOverrideLimit The initial timelock limit for owner override.
+   * @param initialMultiSigTimelock The initial timelock for signatory approval.
+   * @param initialOwnerOverrideTimelock The initial timelock for owner override.
    */
   constructor(
     address owner,
     uint256 initialThreshold,
-    uint256 initialOwnerOverrideLimit
-  ) User(owner, initialOwnerOverrideLimit) {
-    signatoryThreshold = initialThreshold;
-  }
+    uint256 initialMultiSigTimelock,
+    uint256 initialOwnerOverrideTimelock
+  ) MultiSigTimelock(owner, initialThreshold, initialMultiSigTimelock, initialOwnerOverrideTimelock) {}
 
   /**
    * @dev Modifier to ensure a valid vault transaction.
    * Reverts with `InvalidTransaction` if the given transaction ID is invalid.
-   * @param transactionId The ID of the transaction to validate.
+   * @param txId The ID of the transaction to validate.
    */
   modifier validTransaction(
-    uint256 transactionId
+    uint256 txId
   ) {
-    if (transactionId == 0 || transactionId < _transactionCount.current()) {
-      revert InvalidTransaction(transactionId);
+    if (txId == 0 || txId > _transactionCount.current()) {
+      revert InvalidTransaction(txId);
+    }
+    _;
+  }
+
+  /**
+   * @dev Modifier to ensure a valid vault transaction has't been executed.
+   * Reverts with `TransactionAlreadyExecuted` if the valid transaction has been executed.
+   * @param txId The ID of the transaction to validate.
+   */
+  modifier pendingTransaction(
+    uint256 txId
+  ) {
+    if (_transactions[txId].isExecuted) {
+      revert TransactionAlreadyExecuted(txId);
     }
     _;
   }
@@ -69,11 +85,137 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
    * @inheritdoc IMultiSigTransaction
    */
   function depositToken(address token, uint256 amount) external payable {
-    AddressUtils.requireValidTokenAddress(token);
-    require(amount >= msg.value, 'MultiSigTransaction: Invalid deposit amount');
+    ERC20Validator.requireValidERC20Token(token);
+    uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
 
-    IERC20(token).transferFrom(_msgSender(), address(this), msg.value);
-    emit FundsReceived(_msgSender(), token, msg.value);
+    if (allowance < amount) {
+      uint256 remainingAllowance = amount.subtract(allowance);
+      revert ERC20InsufficientAllowance(_msgSender(), allowance, remainingAllowance);
+    }
+
+    IERC20(token).transferFrom(_msgSender(), address(this), amount);
+    emit FundsReceived(_msgSender(), token, amount);
+  }
+
+  /**
+   * @notice Initiates a new transaction by an Owner or Signer.
+   * @param to The address receiving the transaction token.
+   * @param value The amount of ETH or tokens to send.
+   * @param token The ERC20 token address (0x0 for ETH).
+   * @param data The transaction data (0x0 for empty data).
+   */
+  function initiateTransaction(
+    address payable to,
+    address token,
+    uint256 value,
+    bytes memory data
+  ) public validSigner isExecutable {
+    AddressUtils.requireValidTransactionReceiver(to);
+    if (_isPendingTransaction) revert PendingTransactionState(_isPendingTransaction);
+
+    if (token == address(0)) {
+      if (value > getBalance()) revert InsufficientTokenBalance(getBalance(), value);
+    } else {
+      ERC20Validator.requireValidERC20Token(token);
+      if (value > getTokenBalance(token)) revert InsufficientTokenBalance(getTokenBalance(token), value);
+    }
+
+    _isPendingTransaction = true;
+    _transactionCount.increment();
+    uint256 transactionId = _transactionCount.current();
+    Transaction storage txn = _transactions[transactionId];
+
+    txn.initiator = _msgSender();
+    txn.to = to;
+    txn.token = token;
+    txn.value = value;
+    txn.timestamp = block.timestamp;
+    txn.data = data;
+
+    emit TransactionInitiated(transactionId, _msgSender(), to, token, value);
+  }
+
+  /**
+   * @notice Enables valid signers to approve a transaction.
+   * @param txId The ID of the transaction to approve.
+   */
+  function approveTransaction(
+    uint256 txId
+  ) public validSigner validTransaction(txId) pendingTransaction(txId) {
+    Transaction storage txn = _transactions[txId];
+    if (txn.signatures.contains(_msgSender())) revert TransactionNotApproved(txId);
+
+    txn.approvals.increment();
+    txn.signatures.add(_msgSender());
+    emit TransactionApproved(txId, _msgSender(), block.timestamp);
+  }
+
+  /**
+   * @notice Enables valid signers to revokes a transaction approval.
+   * @param txId The ID of the transaction to revoke approval for.
+   */
+  function revokeTransactionApproval(
+    uint256 txId
+  ) public validSigner validTransaction(txId) pendingTransaction(txId) {
+    Transaction storage txn = _transactions[txId];
+    if (!txn.signatures.contains(_msgSender())) revert TransactionNotApproved(txId);
+
+    txn.approvals.decrement();
+    txn.signatures.remove(_msgSender());
+    emit TransactionRevoked(txId, _msgSender(), block.timestamp);
+  }
+
+  /**
+   * @notice Executes a transaction if the threshold is met.
+   * @param txId The ID of the transaction to execute.
+   */
+  function executeTransaction(
+    uint256 txId
+  ) public validExecutor validTransaction(txId) pendingTransaction(txId) {
+    uint256 executionTimestamp = block.timestamp;
+    Transaction storage txn = _transactions[txId];
+    if (!_isMultiSigTimelockElapsed(txn.timestamp)) {
+      uint256 requiredTime = txn.timestamp.add(multiSigTimelock);
+      revert TimelockNotElapsed(requiredTime, executionTimestamp);
+    }
+
+    if (_isOwner(_msgSender())) {
+      if (!txn.signatures.contains(_msgSender())) revert TransactionNotApproved(txId);
+      if (!_isSignatoryThresholdMet(txn.approvals.current())) {
+        revert InsufficientSignerApprovals(signatoryThreshold, txn.approvals.current());
+      }
+    } else {
+      txn.isOverride = true;
+    }
+
+    txn.isExecuted = true;
+    _isPendingTransaction = false;
+    if (txn.token == address(0)) {
+      // Send ETH
+      Address.sendValue(txn.to, txn.value);
+    } else {
+      // Send ERC20 tokens
+      IERC20 token = IERC20(txn.token);
+      SafeERC20.safeTransfer(token, txn.to, txn.value);
+    }
+
+    emit TransactionExecuted(txId, _msgSender(), block.timestamp);
+  }
+
+  /**
+   * @notice Deletes the latest transaction item if not executed.
+   * @dev Only callable by a contract executor (Owner or Executor)
+   */
+  function deletePendingTransaction() public validExecutor {
+    if (!_isPendingTransaction) revert PendingTransactionState(_isPendingTransaction);
+
+    uint256 latestTxId = _transactionCount.current();
+    if (_transactions[latestTxId].isExecuted) {
+      revert ActionAlreadyExecuted(latestTxId);
+    }
+
+    delete _transactions[latestTxId];
+    _transactionCount.decrement();
   }
 
   /**
@@ -91,8 +233,8 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
    */
   function getTokenBalance(
     address token
-  ) public view returns (uint256) {
-    AddressUtils.requireValidTokenAddress(token);
+  ) public returns (uint256) {
+    ERC20Validator.requireValidERC20Token(token);
     return IERC20(token).balanceOf(address(this));
   }
 
@@ -106,133 +248,60 @@ abstract contract MultiSigTransaction is User, IMultiSigTransaction {
   }
 
   /**
-   * @notice Returns the transaction details of a given ID.
-   * @param transactionId The ID of the requested transaction.
-   * @return Transaction The transaction object associated with the provided ID.
+   * @notice Returns the transaction details of a given ID, excluding signatures.
+   * @param txId The ID of the requested transaction.
+   * @return initiator The address of the transaction initiator.
+   * @return to The address receiving the transaction tokens.
+   * @return token The token contract address (0x0 for ETH).
+   * @return value The ETH or token value to send.
+   * @return approvals The total number of approvals.
+   * @return isExecuted Whether the transaction has been executed.
+   * @return isOverride Whether the transaction was overridden by the executor.
+   * @return data The transaction data (0x0 for empty data).
    */
   function getTransaction(
-    uint256 transactionId
-  ) public view validTransaction(transactionId) onlyUser returns (Transaction memory) {
-    return _transactions[transactionId];
+    uint256 txId
+  )
+    public
+    view
+    onlyUser
+    validTransaction(txId)
+    returns (
+      address initiator,
+      address to,
+      address token,
+      uint256 value,
+      uint256 approvals,
+      bool isExecuted,
+      bool isOverride,
+      bytes memory data
+    )
+  {
+    Transaction storage txn = _transactions[txId];
+    return
+      (txn.initiator, txn.to, txn.token, txn.value, txn.approvals.current(), txn.isExecuted, txn.isOverride, txn.data);
   }
 
   /**
    * @notice Returns the total number of approvals a transaction has.
-   * @param transactionId The ID of the requested transaction.
+   * @param txId The ID of the requested transaction.
    * @return uint256 The transaction total number of approvers.
    */
   function getTransactionApprovals(
-    uint256 transactionId
-  ) public view validTransaction(transactionId) onlyUser returns (uint256) {
-    return _transactions[transactionId].approvals.current();
+    uint256 txId
+  ) public view validTransaction(txId) onlyUser returns (uint256) {
+    return _transactions[txId].approvals.current();
   }
 
   /**
    * @notice Returns the signatures associated with a transaction.
-   * @param transactionId The ID of the requested transaction.
+   * @param txId The ID of the requested transaction.
    * @return address[] The transaction signatures array.
    */
   function getTransactionSignatures(
-    uint256 transactionId
-  ) public view validTransaction(transactionId) onlyUser returns (address[] memory) {
-    return _transactions[transactionId].signatures;
-  }
-
-  /**
-   * @notice Initiates a new transaction by an Owner or Signer.
-   * @param target The target address for the transaction.
-   * @param value The amount of ETH or tokens to send.
-   * @param token The ERC20 token address (0x0 for ETH).
-   * @param data The transaction data (0x0 for empty data).
-   */
-  function initiateTransaction(
-    address payable target,
-    address token,
-    uint256 value,
-    bytes memory data
-  ) public validSigner {
-    AddressUtils.requireValidTransactionTarget(target);
-    if (token == address(0)) {
-      if (value > getBalance()) revert InsufficientTokenBalance(getBalance(), value);
-    } else {
-      if (value > getTokenBalance(token)) revert InsufficientTokenBalance(getTokenBalance(token), value);
-    }
-
-    _transactionCount.increment();
-    uint256 transactionId = _transactionCount.current();
-    Transaction storage txn = _transactions[transactionId];
-
-    txn.initiator = _msgSender();
-    txn.target = target;
-    txn.token = token;
-    txn.value = value;
-    txn.data = data;
-
-    emit TransactionInitiated(transactionId, _msgSender(), target, token, value);
-  }
-
-  /**
-   * @notice Enables valid signers to approve a transaction.
-   * @param transactionId The ID of the transaction to approve.
-   */
-  function approveTransaction(
-    uint256 transactionId
-  ) public validTransaction(transactionId) validSigner {
-    Transaction storage txn = _transactions[transactionId];
-    if (txn.isExecuted) revert TransactionAlreadyExecuted(transactionId);
-    if (approvals[transactionId][_msgSender()]) revert TransactionNotApproved(transactionId);
-
-    txn.approvals.increment();
-    txn.signatures.push(_msgSender());
-    approvals[transactionId][_msgSender()] = true;
-    emit TransactionApproved(transactionId, _msgSender(), block.timestamp);
-  }
-
-  /**
-   * @notice Enables valid signers to revokes a transaction approval.
-   * @param transactionId The ID of the transaction to revoke approval for.
-   */
-  function revokeApproval(
-    uint256 transactionId
-  ) public validTransaction(transactionId) validSigner {
-    Transaction storage txn = _transactions[transactionId];
-    if (txn.isExecuted) revert TransactionAlreadyExecuted(transactionId);
-    if (!approvals[transactionId][_msgSender()]) revert TransactionNotApproved(transactionId);
-
-    txn.approvals.decrement();
-    approvals[transactionId][_msgSender()] = false;
-    uint256 signerSignatureIndex = ArraysUtils.arrayElementIndexLookup(_msgSender(), txn.signatures);
-    ArraysUtils.removeElementFromArray(signerSignatureIndex, txn.signatures);
-
-    emit TransactionRevoked(transactionId, _msgSender(), block.timestamp);
-  }
-
-  /**
-   * @notice Executes a transaction if the threshold is met.
-   * @param transactionId The ID of the transaction to execute.
-   */
-  function executeTransaction(
-    uint256 transactionId
-  ) public validTransaction(transactionId) validExecutor {
-    Transaction storage txn = _transactions[transactionId];
-    if (txn.isExecuted) revert TransactionAlreadyExecuted(transactionId);
-    if (txn.approvals.current() < signatoryThreshold) {
-      revert InsufficientApprovals(signatoryThreshold, txn.approvals.current());
-    }
-    if (hasRole(OWNER_ROLE, _msgSender())) {
-      if (!approvals[transactionId][_msgSender()]) revert TransactionNotApproved(transactionId);
-    }
-
-    txn.isExecuted = true;
-    if (txn.token == address(0)) {
-      // Send ETH
-      Address.sendValue(txn.target, txn.value);
-    } else {
-      // Send ERC20 tokens
-      IERC20 token = IERC20(txn.token);
-      SafeERC20.safeTransfer(token, txn.target, txn.value);
-    }
-
-    emit TransactionExecuted(transactionId, _msgSender(), block.timestamp);
+    uint256 txId
+  ) public view validTransaction(txId) onlyUser returns (address[] memory) {
+    Transaction storage txn = _transactions[txId];
+    return txn.signatures.values();
   }
 }

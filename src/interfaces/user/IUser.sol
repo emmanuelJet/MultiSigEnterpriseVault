@@ -17,11 +17,5 @@ interface IUser {
    * @dev Error thrown when an unauthorized account attempts to sign a transaction.
    * @param account The address of the unauthorized account.
    */
-  error UnauthorizedTransactionSigner(address account);
-
-  /**
-   * @dev Error thrown when an unauthorized account attempts to execute a transaction.
-   * @param account The address of the unauthorized account.
-   */
-  error UnauthorizedTransactionExecutor(address account);
+  error UnauthorizedMultiSigSigner(address account);
 }

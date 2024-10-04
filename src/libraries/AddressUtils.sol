@@ -17,16 +17,10 @@ library AddressUtils {
   error InvalidUserAddress(address account);
 
   /**
-   * @dev Error thrown when an invalid token address is provided.
-   * @param token The invalid token address.
+   * @dev Error thrown when an invalid transaction receiver is provided.
+   * @param receiver The invalid receiver address.
    */
-  error InvalidTokenAddress(address token);
-
-  /**
-   * @dev Error thrown when an invalid transaction target is provided.
-   * @param target The invalid target address.
-   */
-  error InvalidTransactionTarget(address target);
+  error InvalidTransactionReceiver(address receiver);
 
   /**
    * @notice Ensure a user address is valid (i.e., not a zero address).
@@ -41,26 +35,14 @@ library AddressUtils {
   }
 
   /**
-   * @notice Ensure a token address is valid.
-   * @param token The token address to validate.
+   * @notice Ensure a transaction receiver is valid.
+   * @param receiver The transaction receiver to validate.
    */
-  function requireValidTokenAddress(
-    address token
+  function requireValidTransactionReceiver(
+    address payable receiver
   ) internal pure {
-    if (token == address(0)) {
-      revert InvalidTokenAddress(token);
-    }
-  }
-
-  /**
-   * @notice Ensure a transaction target is valid.
-   * @param target The transaction target to validate.
-   */
-  function requireValidTransactionTarget(
-    address payable target
-  ) internal pure {
-    if (target == address(0)) {
-      revert InvalidTransactionTarget(target);
+    if (receiver == address(0)) {
+      revert InvalidTransactionReceiver(receiver);
     }
   }
 }

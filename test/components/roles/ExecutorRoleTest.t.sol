@@ -156,7 +156,7 @@ contract ExecutorRoleTest is MultiSigEnterpriseVaultTest {
 
     vm.prank(vaultExecutor);
     uint256 newOwnerOverrideTimelock = 24 hours;
-    vault.decreaseOwnerOverrideTimelockLimit(newOwnerOverrideTimelock);
+    vault.decreaseOwnerOverrideTimelock(newOwnerOverrideTimelock);
     assertEq(vault.ownerOverrideTimelock(), newOwnerOverrideTimelock);
   }
 

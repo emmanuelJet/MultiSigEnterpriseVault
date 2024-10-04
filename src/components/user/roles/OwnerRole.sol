@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
 import {IOwnerRole} from '../../../interfaces/user/roles/IOwnerRole.sol';
+import {AddressUtils} from '../../../libraries/AddressUtils.sol';
 import {OWNER_ROLE} from '../../../utilities/VaultConstants.sol';
 
 /**
@@ -19,25 +20,26 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
 
   /**
    * @dev Initializes the Owner role and sets the initial owner override timelock.
-   * @param _ownerAddress The address of the initial owner.
-   * @param _initialOwnerOverrideLimit The initial timelock value for owner override.
+   * @param owner_ The address of the initial owner.
+   * @param initialOwnerOverrideTimelock The initial timelock value for owner override.
    */
-  constructor(address _ownerAddress, uint256 _initialOwnerOverrideLimit) {
-    if (_initialOwnerOverrideLimit <= 0) {
-      revert InvalidOwnerOverrideLimitValue(_initialOwnerOverrideLimit);
+  constructor(address owner_, uint256 initialOwnerOverrideTimelock) {
+    AddressUtils.requireValidUserAddress(owner_);
+    if (initialOwnerOverrideTimelock <= 0) {
+      revert InvalidOwnerOverrideTimelockValue(initialOwnerOverrideTimelock);
     }
 
     // Grant DEFAULT_ADMIN_ROLE to the owner
-    _grantRole(DEFAULT_ADMIN_ROLE, _ownerAddress);
+    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
 
     // Now change the admin role of DEFAULT_ADMIN_ROLE to OWNER_ROLE
     _setRoleAdmin(DEFAULT_ADMIN_ROLE, OWNER_ROLE);
 
     // Grant OWNER_ROLE to the owner
-    _grantRole(OWNER_ROLE, _ownerAddress);
+    _grantRole(OWNER_ROLE, owner_);
 
-    ownerOverrideTimelock = _initialOwnerOverrideLimit;
-    _owner = _ownerAddress;
+    ownerOverrideTimelock = initialOwnerOverrideTimelock;
+    _owner = owner_;
   }
 
   /**
@@ -45,7 +47,7 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
    * Reverts with `AccessControlUnauthorizedOwner` if the caller is not the owner.
    */
   modifier onlyOwner() {
-    if (!hasRole(OWNER_ROLE, _msgSender())) {
+    if (!_isOwner(_msgSender())) {
       revert AccessControlUnauthorizedOwner(_msgSender());
     }
     _;
@@ -63,32 +65,45 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
    * @notice Increases the owner override timelock to a new limit.
    * Emits the `OwnerOverrideTimelockIncreased` event.
    *
-   * @param newLimit The new timelock value for the owner override.
+   * @param newOwnerTimelock The new timelock value for the owner override.
    * @dev
-   * - `newLimit` must be higher than the current value.
+   * - `newOwnerTimelock` must be higher than the current value.
    */
-  function increaseOwnerOverrideTimelockLimit(
-    uint256 newLimit
+  function increaseOwnerOverrideTimelock(
+    uint256 newOwnerTimelock
   ) public onlyRole(OWNER_ROLE) {
-    require(newLimit > ownerOverrideTimelock, 'OwnerRole: New limit must be higher');
-    ownerOverrideTimelock = newLimit;
-    emit OwnerOverrideTimelockIncreased(newLimit);
+    if (newOwnerTimelock <= ownerOverrideTimelock) revert InvalidOwnerOverrideTimelockValue(newOwnerTimelock);
+
+    ownerOverrideTimelock = newOwnerTimelock;
+    emit OwnerOverrideTimelockIncreased(newOwnerTimelock);
   }
 
   /**
    * @notice Decreases the owner override timelock to a new limit.
    * Emits the `OwnerOverrideTimelockDecreased` event.
    *
-   * @param newLimit The new timelock value for the owner override.
+   * @param newOwnerTimelock The new timelock value for the owner override.
    * @dev
-   * - `newLimit` must be lower than the current value.
+   * - `newOwnerTimelock` must be lower than the current value.
    */
-  function decreaseOwnerOverrideTimelockLimit(
-    uint256 newLimit
+  function decreaseOwnerOverrideTimelock(
+    uint256 newOwnerTimelock
   ) public onlyRole(OWNER_ROLE) {
-    require(newLimit < ownerOverrideTimelock, 'OwnerRole: New limit must be lower');
-    ownerOverrideTimelock = newLimit;
-    emit OwnerOverrideTimelockDecreased(newLimit);
+    if (newOwnerTimelock >= ownerOverrideTimelock) revert InvalidOwnerOverrideTimelockValue(newOwnerTimelock);
+
+    ownerOverrideTimelock = newOwnerTimelock;
+    emit OwnerOverrideTimelockDecreased(newOwnerTimelock);
+  }
+
+  /**
+   * @notice Checks if an address is the contract owner.
+   * @param account The address to check.
+   * @return status True if the address is the contract owner, otherwise false.
+   */
+  function _isOwner(
+    address account
+  ) internal view returns (bool status) {
+    status = account == _owner && hasRole(OWNER_ROLE, account);
   }
 
   /**

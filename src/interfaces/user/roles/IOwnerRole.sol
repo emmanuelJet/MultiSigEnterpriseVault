@@ -9,9 +9,9 @@ pragma solidity ^0.8.27;
 interface IOwnerRole {
   /**
    * @dev Error thrown when an invalid owner override limit is provided.
-   * @param limit The invalid limit value.
+   * @param value The invalid timelock value.
    */
-  error InvalidOwnerOverrideLimitValue(uint256 limit);
+  error InvalidOwnerOverrideTimelockValue(uint256 value);
 
   /**
    * @dev Error thrown when an unauthorized account attempts to perform an owner action.

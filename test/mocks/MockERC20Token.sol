@@ -8,7 +8,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
  * @dev A mock ERC20 token for testing purposes.
  */
 contract MockERC20Token is ERC20 {
-  constructor() ERC20('Mock Token', 'MOCK') {
-    _mint(msg.sender, 1000 ether);
+  constructor(address owner) ERC20('Mock Token', 'MOCK') {
+    _mint(owner, 1000 ether);
   }
 }

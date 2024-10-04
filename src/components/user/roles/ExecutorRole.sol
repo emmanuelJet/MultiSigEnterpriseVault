@@ -30,7 +30,7 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
    * Reverts with `AccessControlUnauthorizedExecutor` if the caller is not the executor.
    */
   modifier onlyExecutor() {
-    if (!hasRole(EXECUTOR_ROLE, _msgSender())) {
+    if (!_isExecutor(_msgSender())) {
       revert AccessControlUnauthorizedExecutor(_msgSender());
     }
     _;
@@ -71,7 +71,7 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
     }
 
     _validateExecutorAddress(newExecutor);
-    grantRole(EXECUTOR_ROLE, newExecutor);
+    _grantRole(EXECUTOR_ROLE, newExecutor);
     _executor = newExecutor;
 
     emit ExecutorAdded(newExecutor);
@@ -84,7 +84,7 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
   function _removeExecutor() internal onlyRole(OWNER_ROLE) {
     address oldExecutor = _executor;
     oldExecutor.requireValidUserAddress();
-    revokeRole(EXECUTOR_ROLE, oldExecutor);
+    _revokeRole(EXECUTOR_ROLE, oldExecutor);
     _executor = address(0);
     emit ExecutorRemoved(oldExecutor);
   }
@@ -101,8 +101,8 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
     oldExecutor.requireValidUserAddress();
 
     _validateExecutorAddress(newExecutor);
-    revokeRole(EXECUTOR_ROLE, oldExecutor);
-    grantRole(EXECUTOR_ROLE, newExecutor);
+    _revokeRole(EXECUTOR_ROLE, oldExecutor);
+    _grantRole(EXECUTOR_ROLE, newExecutor);
 
     _executor = newExecutor;
 
@@ -147,12 +147,33 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
     emit OwnerOverrideApproved(newOwner, executionTimestamp);
   }
 
+  /**
+   * @notice Checks if an address is the contract executor.
+   * @param account The address to check.
+   * @return status True if the address is the contract executor, otherwise false.
+   */
+  function _isExecutor(
+    address account
+  ) internal view returns (bool status) {
+    status = account == _executor && hasRole(EXECUTOR_ROLE, account);
+  }
+
+  /**
+   * @dev Validates the provided executor address.
+   *
+   * This function checks if the given executor address is a valid user address
+   * and ensures that the address does not have the OWNER_ROLE or SIGNER_ROLE.
+   * If the address has either of these roles, the function reverts with an
+   * `InvalidExecutorUser` error.
+   *
+   * @param executor_ The address of the executor to validate.
+   */
   function _validateExecutorAddress(
-    address newExecutor
+    address executor_
   ) private view {
-    newExecutor.requireValidUserAddress();
-    if (hasRole(OWNER_ROLE, newExecutor) || hasRole(SIGNER_ROLE, newExecutor)) {
-      revert InvalidExecutorUser(newExecutor);
+    executor_.requireValidUserAddress();
+    if (hasRole(OWNER_ROLE, executor_) || hasRole(SIGNER_ROLE, executor_)) {
+      revert InvalidExecutorUser(executor_);
     }
   }
 }
