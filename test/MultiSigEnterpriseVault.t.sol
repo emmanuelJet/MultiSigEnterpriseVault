@@ -11,14 +11,18 @@ contract MultiSigEnterpriseVaultTest is Test {
   address internal vaultAddress;
   address internal vaultDeployer;
   uint256 internal initialThreshold;
-  uint256 internal initialOwnerOverrideLimit;
+  uint256 internal initialMultiSigTimelock;
+  uint256 internal initialOwnerOverrideTimelock;
 
   function setUp() public virtual {
     initialThreshold = 3;
-    initialOwnerOverrideLimit = 3 days;
+    initialMultiSigTimelock = 1 days;
+    initialOwnerOverrideTimelock = 3 days;
     vaultOwner = makeAddr('vaultOwner');
+    vm.deal(vaultOwner, 100 ether);
 
-    vault = new MultiSigEnterpriseVault(vaultOwner, initialThreshold, initialOwnerOverrideLimit);
+    vault =
+      new MultiSigEnterpriseVault(vaultOwner, initialThreshold, initialMultiSigTimelock, initialOwnerOverrideTimelock);
     vaultAddress = address(vault);
     vaultDeployer = msg.sender;
   }

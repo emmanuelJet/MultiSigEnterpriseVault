@@ -21,35 +21,35 @@ contract OwnerRoleTest is MultiSigEnterpriseVaultTest {
   function testOnlyOwnerCanUpdateThreshold() public {
     vm.prank(address(0x5678));
     vm.expectRevert();
-    vault.ownerUpdateSignatoryThreshold(5);
+    vault.updateSignatoryThreshold(5);
   }
 
   function testUpdateSignatoryThreshold() public {
     vm.prank(vaultOwner);
     uint256 newSignatoryThreshold = 5;
-    vault.ownerUpdateSignatoryThreshold(newSignatoryThreshold);
+    vault.updateSignatoryThreshold(newSignatoryThreshold);
     assertEq(vault.signatoryThreshold(), newSignatoryThreshold);
   }
 
   function testUnauthorizedTimelockUpdate() public {
     vm.prank(address(0x5678));
     vm.expectRevert();
-    vault.increaseOwnerOverrideTimelockLimit(5 days);
+    vault.increaseOwnerOverrideTimelock(5 days);
   }
 
   function testOwnerOverrideTimelock() public view {
-    assertEq(vault.ownerOverrideTimelock(), initialOwnerOverrideLimit);
+    assertEq(vault.ownerOverrideTimelock(), initialOwnerOverrideTimelock);
   }
 
   function testOwnerCanIncreaseOverrideTimelock() public {
     vm.prank(vaultOwner);
-    vault.increaseOwnerOverrideTimelockLimit(5 days);
+    vault.increaseOwnerOverrideTimelock(5 days);
     assertEq(vault.ownerOverrideTimelock(), 5 days);
   }
 
   function testOwnerCanDecreaseOverrideTimelock() public {
     vm.prank(vaultOwner);
-    vault.decreaseOwnerOverrideTimelockLimit(24 hours);
+    vault.decreaseOwnerOverrideTimelock(24 hours);
     assertEq(vault.ownerOverrideTimelock(), 24 hours);
   }
 }

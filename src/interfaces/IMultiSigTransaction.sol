@@ -13,11 +13,25 @@ interface IMultiSigTransaction {
   error InvalidTransaction(uint256 transactionId);
 
   /**
+   * @dev Error indicating the state of a pending transaction.
+   * @param isPending Boolean value representing whether the latest transaction is pending.
+   */
+  error PendingTransactionState(bool isPending);
+
+  /**
    * @dev Error thrown when there are insufficient tokens to complete a transaction.
    * @param availableBalance The available vault token balance.
    * @param requestedValue The requested transaction value.
    */
   error InsufficientTokenBalance(uint256 availableBalance, uint256 requestedValue);
+
+  /**
+   * @dev Indicates a failure with the `spender`’s `allowance`. Used in transfers.
+   * @param owner The address whose tokens are being transferred.
+   * @param allowance Amount of tokens a `spender` is allowed to operate with.
+   * @param needed The remaining allowance needed to complete the transfer.
+   */
+  error ERC20InsufficientAllowance(address owner, uint256 allowance, uint256 needed);
 
   /**
    * @dev Error thrown when a transaction has already been executed.
@@ -50,12 +64,12 @@ interface IMultiSigTransaction {
    * @dev Event emitted when a transaction is initiated.
    * @param transactionId The ID of the initiated transaction.
    * @param initiator The address of the initiator.
-   * @param target The address to receive the value.
+   * @param to The address to receive the value.
    * @param token The token contract address (0x0 for ETH).
    * @param value The value to be transferred.
    */
   event TransactionInitiated(
-    uint256 indexed transactionId, address indexed initiator, address indexed target, address token, uint256 value
+    uint256 indexed transactionId, address indexed initiator, address indexed to, address token, uint256 value
   );
 
   /**
@@ -77,7 +91,7 @@ interface IMultiSigTransaction {
   /**
    * @dev Event emitted when a transaction is executed.
    * @param transactionId The ID of the executed transaction.
-   * @param executor The address of the signer who executed the transaction.
+   * @param executor The address of the account who executed the transaction.
    * @param timestamp The timestamp (in seconds) when the transaction was executed.
    */
   event TransactionExecuted(uint256 indexed transactionId, address indexed executor, uint256 timestamp);
@@ -85,15 +99,9 @@ interface IMultiSigTransaction {
   /**
    * @notice Receives ERC20 tokens and emits `FundsReceived` event
    * @param token The ERC20 token address.
-   * @param amount The amount of tokens sent.
+   * @param amount The amount of ERC20 tokens sent.
    */
   function depositToken(address token, uint256 amount) external payable;
-
-  /**
-   * @dev Returns the current signatory threshold for the vault.
-   * @return The current signatory threshold.
-   */
-  function signatoryThreshold() external view returns (uint256);
 
   /**
    * @dev Returns the vault's total transactions.

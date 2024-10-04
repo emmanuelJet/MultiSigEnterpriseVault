@@ -35,18 +35,29 @@ contract SignerRoleTest is MultiSigEnterpriseVaultTest {
     vault.addSigner(invalidSigner);
   }
 
-  function testOwnerCannotUpdateThresholdWithoutApproval() public {
+  function testOwnerCannotAddSignerWithoutApproval() public {
     vm.prank(vaultOwner);
     vault.addSigner(firstSigner);
     vm.prank(vaultOwner);
     vault.addSigner(secondSigner);
     vm.prank(vaultOwner);
-    vault.addSigner(vaultDeployer);
-    assertEq(vault.totalSigners(), 3);
+    assertEq(vault.totalSigners(), 2);
 
     vm.prank(vaultOwner);
     vm.expectRevert();
-    vault.ownerUpdateSignatoryThreshold(5);
+    vault.addSigner(vaultDeployer);
+  }
+
+  function testOwnerCannotUpdateThresholdWithoutApproval() public {
+    vm.prank(vaultOwner);
+    vault.addSigner(firstSigner);
+    vm.prank(vaultOwner);
+    vault.addSigner(secondSigner);
+    assertEq(vault.totalSigners(), 2);
+
+    vm.prank(vaultOwner);
+    vm.expectRevert();
+    vault.updateSignatoryThreshold(5);
   }
 
   function testSignerCannotAddAnotherSigner() public {
@@ -75,6 +86,9 @@ contract SignerRoleTest is MultiSigEnterpriseVaultTest {
 
     // Verify the signer was removed via `_users`
     vm.prank(vaultOwner);
+    assertEq(vault.totalUsers(), 1);
+
+    vm.prank(vaultOwner);
     vm.expectRevert();
     vault.getUserProfile(firstSigner);
   }
@@ -93,5 +107,9 @@ contract SignerRoleTest is MultiSigEnterpriseVaultTest {
     vm.prank(vaultOwner);
     vm.expectRevert();
     vault.addSigner(firstSigner);
+
+    vm.prank(vaultOwner);
+    assertEq(vault.totalUsers(), 2);
+    assertEq(vault.totalSigners(), 1);
   }
 }

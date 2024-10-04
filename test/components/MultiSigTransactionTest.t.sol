@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Address} from '@openzeppelin/contracts/utils/Address.sol';
-import {Transaction} from '../../src/utilities/VaultStructs.sol';
 import {MockERC20Token} from '../mocks/MockERC20Token.sol';
 import './BaseMultiSigTest.t.sol';
 
@@ -14,16 +13,20 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
   function setUp() public override {
     super.setUp();
 
-    mockToken = IERC20(address(new MockERC20Token()));
+    mockToken = IERC20(address(new MockERC20Token(vaultOwner)));
     mockAddress = address(mockToken);
 
-    deal(mockAddress, vaultAddress, 1000 ether);
+    vm.prank(vaultOwner);
+    mockToken.approve(vaultAddress, 300 ether);
+    vm.prank(vaultOwner);
+    vault.depositToken(mockAddress, 300 ether);
+    vm.prank(vaultOwner);
     Address.sendValue(payable(vaultAddress), 10 ether);
   }
 
-  function testContactBalance() public view {
+  function testContactBalance() public {
     assertEq(vault.getBalance(), 10 ether);
-    assertEq(vault.getTokenBalance(mockAddress), 1000 ether);
+    assertEq(vault.getTokenBalance(mockAddress), 300 ether);
   }
 
   function testInitiateETHTransaction() public {
@@ -38,13 +41,24 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     assertEq(vault.getTransactionApprovals(1), 0);
 
     vm.prank(secondSigner);
-    Transaction memory txn = vault.getTransaction(1);
-    assertEq(txn.initiator, firstSigner);
-    assertEq(txn.target, txReceiver);
-    assertEq(txn.token, address(0));
-    assertEq(txn.value, txValue);
-    assertFalse(txn.isExecuted);
-    assertEq(txn.data, txData);
+    (
+      address initiator,
+      address to,
+      address token,
+      uint256 value,
+      uint256 approvals,
+      bool isExecuted,
+      bool isOverride,
+      bytes memory data
+    ) = vault.getTransaction(1);
+    assertEq(initiator, firstSigner);
+    assertEq(to, txReceiver);
+    assertEq(token, address(0));
+    assertEq(value, txValue);
+    assertEq(approvals, 0);
+    assertFalse(isExecuted);
+    assertFalse(isOverride);
+    assertEq(data, txData);
   }
 
   function testApproveAndExecuteETHTransaction() public {
@@ -57,6 +71,9 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     vault.approveTransaction(1);
     vm.prank(secondSigner);
     vault.approveTransaction(1);
+
+    // Fast forward time to simulate passing the timelock period
+    skip(2 days);
     vm.prank(vaultOwner);
     vault.approveTransaction(1);
 
@@ -75,10 +92,10 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     assertEq(vault.totalTransactions(), 1);
 
     vm.prank(firstSigner);
-    Transaction memory txn = vault.getTransaction(1);
-    assertEq(txn.initiator, secondSigner);
-    assertEq(txn.token, mockAddress);
-    assertEq(txn.value, tokenAmount);
+    (address initiator,, address token, uint256 value,,,,) = vault.getTransaction(1);
+    assertEq(initiator, secondSigner);
+    assertEq(token, mockAddress);
+    assertEq(value, tokenAmount);
   }
 
   function testApproveAndExecuteERC20Transaction() public {
@@ -86,18 +103,25 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     uint256 tokenAmount = 100 ether;
     vault.initiateTransaction(payable(address(0x1234)), mockAddress, tokenAmount, '0x');
 
-    vm.prank(firstSigner);
-    vault.approveTransaction(1);
     vm.prank(secondSigner);
     vault.approveTransaction(1);
     vm.prank(vaultOwner);
     vault.approveTransaction(1);
 
+    // Fast forward time to simulate passing the timelock period for executor override
+    skip(2 days);
+
     vm.prank(vaultExecutor);
     vault.executeTransaction(1);
 
+    bool isOverride;
+    uint256 approvals;
+    vm.prank(vaultExecutor);
+    (,,,, approvals,, isOverride,) = vault.getTransaction(1);
+    assertTrue(isOverride);
+    assertEq(approvals, 2);
     assertEq(mockToken.balanceOf(payable(address(0x1234))), tokenAmount);
-    assertEq(vault.getTokenBalance(mockAddress), 900 ether);
+    assertEq(vault.getTokenBalance(mockAddress), 200 ether);
   }
 
   function testRevokeApproval() public {
@@ -110,20 +134,22 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     assertEq(vault.getTransactionApprovals(1), 1);
 
     vm.prank(firstSigner);
-    vault.revokeApproval(1);
+    vault.revokeTransactionApproval(1);
 
     vm.prank(firstSigner);
     assertEq(vault.getTransactionApprovals(1), 0);
   }
 
-  function testInsufficientApprovals() public {
+  function testInsufficientTransactionApprovals() public {
     vm.prank(firstSigner);
     vault.initiateTransaction(payable(address(0x1234)), address(0), 1 ether, '0x');
 
     vm.prank(firstSigner);
     vault.approveTransaction(1);
 
-    vm.prank(vaultExecutor);
+    skip(2 days);
+
+    vm.prank(vaultOwner);
     vm.expectRevert();
     vault.executeTransaction(1);
   }
