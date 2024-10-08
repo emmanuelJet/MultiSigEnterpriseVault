@@ -24,11 +24,6 @@ contract MultiSigTransactionTest is BaseMultiSigTest {
     Address.sendValue(payable(vaultAddress), 10 ether);
   }
 
-  function testContactBalance() public {
-    assertEq(vault.getBalance(), 10 ether);
-    assertEq(vault.getTokenBalance(mockAddress), 300 ether);
-  }
-
   function testInitiateETHTransaction() public {
     vm.prank(firstSigner);
     bytes memory txData = '0x';

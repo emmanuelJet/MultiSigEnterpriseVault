@@ -25,16 +25,16 @@ contract BaseMultiSigTest is MultiSigEnterpriseVaultTest {
     vault.addSigner(secondSigner);
   }
 
+  function testTotalUsers() public {
+    vm.prank(vaultOwner);
+    assertEq(vault.totalUsers(), 4);
+    assertEq(vault.totalSigners(), 2);
+  }
+
   function testInitialValues() public view {
     assertEq(vault.owner(), vaultOwner);
     assertEq(vault.signatoryThreshold(), initialThreshold);
     assertEq(vault.multiSigTimelock(), initialMultiSigTimelock);
     assertEq(vault.ownerOverrideTimelock(), initialOwnerOverrideTimelock);
-  }
-
-  function testTotalUsers() public {
-    vm.prank(vaultOwner);
-    assertEq(vault.totalUsers(), 4);
-    assertEq(vault.totalSigners(), 2);
   }
 }

@@ -11,13 +11,14 @@ import {SafeMath} from '../../libraries/SafeMath.sol';
 import {RoleType} from '../../utilities/VaultEnums.sol';
 import {UserProfile} from '../../utilities/VaultStructs.sol';
 import {AddressUtils} from '../../libraries/AddressUtils.sol';
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title User Contract
  * @author Emmanuel Joseph (JET)
  * @dev Manages user profiles and integrates with the Owner role for user administration within the MultiSigVault system.
  */
-abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
+abstract contract User is ReentrancyGuard, OwnerRole, ExecutorRole, SignerRole, IUser {
   using Counters for Counters.Counter;
   using AddressUtils for address;
 
@@ -76,6 +77,66 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   }
 
   /**
+   * @notice Adds a new executor.
+   * @param newExecutor The address of the new executor.
+   * @dev Only callable by the owner.
+   */
+  function addExecutor(
+    address newExecutor
+  ) public onlyOwner nonReentrant {
+    _addExecutor(newExecutor);
+    _addUser(newExecutor, RoleType.EXECUTOR);
+  }
+
+  /**
+   * @notice Updates the executor by replacing the old executor with a new one.
+   * @param newExecutor The address of the new executor.
+   * @dev Only callable by the owner.
+   */
+  function updateExecutor(
+    address newExecutor
+  ) public onlyOwner nonReentrant {
+    address oldExecutor = executor();
+    oldExecutor.requireValidUserAddress();
+    newExecutor.requireValidUserAddress();
+
+    _updateExecutor(newExecutor);
+    _removeUser(oldExecutor);
+    _addUser(newExecutor, RoleType.EXECUTOR);
+  }
+
+  /**
+   * @notice Removes the current executor.
+   * @dev Only callable by the owner.
+   *
+   * NOTE: Removing executor will leave the contract without an executor,
+   * thereby disabling any functionality that is only available to the executor.
+   */
+  function removeExecutor() public onlyOwner nonReentrant {
+    address oldExecutor = executor();
+    oldExecutor.requireValidUserAddress();
+
+    _removeExecutor();
+    _removeUser(oldExecutor);
+  }
+
+  /**
+   * @notice Allows an executor to approve the owner override after the timelock has elapsed.
+   */
+  function approveOwnerOverride() public onlyExecutor nonReentrant {
+    address currentOwner = owner();
+    address currentExecutor = _msgSender();
+    uint256 currentTimestamp = block.timestamp;
+
+    _approveOwnerOverride(currentOwner, currentTimestamp, ownerOverrideTimelock);
+    _changeOwner();
+
+    _removeUser(currentOwner);
+    _removeUser(currentExecutor);
+    _addUser(currentExecutor, RoleType.OWNER);
+  }
+
+  /**
    * @notice Returns the total number of users.
    * @return uint256 The total number of users.
    * @dev Only callable by the owner.
@@ -100,73 +161,13 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   }
 
   /**
-   * @notice Adds a new executor.
-   * @param newExecutor The address of the new executor.
-   * @dev Only callable by the owner.
-   */
-  function addExecutor(
-    address newExecutor
-  ) public onlyOwner {
-    _addExecutor(newExecutor);
-    _addUser(newExecutor, RoleType.EXECUTOR);
-  }
-
-  /**
-   * @notice Updates the executor by replacing the old executor with a new one.
-   * @param newExecutor The address of the new executor.
-   * @dev Only callable by the owner.
-   */
-  function updateExecutor(
-    address newExecutor
-  ) public onlyOwner {
-    address oldExecutor = executor();
-    oldExecutor.requireValidUserAddress();
-    newExecutor.requireValidUserAddress();
-
-    _updateExecutor(newExecutor);
-    _removeUser(oldExecutor);
-    _addUser(newExecutor, RoleType.EXECUTOR);
-  }
-
-  /**
-   * @notice Removes the current executor.
-   * @dev Only callable by the owner.
-   *
-   * NOTE: Removing executor will leave the contract without an executor,
-   * thereby disabling any functionality that is only available to the executor.
-   */
-  function removeExecutor() public onlyOwner {
-    address oldExecutor = executor();
-    oldExecutor.requireValidUserAddress();
-
-    _removeExecutor();
-    _removeUser(oldExecutor);
-  }
-
-  /**
-   * @notice Allows an executor to approve the owner override after the timelock has elapsed.
-   */
-  function approveOwnerOverride() public onlyExecutor {
-    address currentOwner = owner();
-    address currentExecutor = _msgSender();
-    uint256 currentTimestamp = block.timestamp;
-
-    _approveOwnerOverride(currentOwner, currentTimestamp, ownerOverrideTimelock);
-    _changeOwner();
-
-    _removeUser(currentOwner);
-    _removeUser(currentExecutor);
-    _addUser(currentExecutor, RoleType.OWNER);
-  }
-
-  /**
    * @notice Adds a new signer user.
    * @param newSigner The address of the new signer.
    * @dev Only callable by the owner.
    */
   function _addSigner(
     address newSigner
-  ) internal override validExecutor {
+  ) internal override validExecutor nonReentrant {
     super._addSigner(newSigner);
     _addUser(newSigner, RoleType.SIGNER);
   }
@@ -178,21 +179,10 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
    */
   function _removeSigner(
     address signer
-  ) internal override validExecutor {
+  ) internal override validExecutor nonReentrant {
     signer.requireValidUserAddress();
     super._removeSigner(signer);
     _removeUser(signer);
-  }
-
-  /**
-   * @notice Checks if an address is a user.
-   * @param user The address to check.
-   * @return status True if the address is a user, otherwise false.
-   */
-  function _isUser(
-    address user
-  ) private view returns (bool status) {
-    status = _users[user].user != address(0);
   }
 
   /**
@@ -225,5 +215,16 @@ abstract contract User is OwnerRole, ExecutorRole, SignerRole, IUser {
   ) private validUser(user) {
     delete _users[user];
     _userCount.decrement();
+  }
+
+  /**
+   * @notice Checks if an address is a user.
+   * @param user The address to check.
+   * @return status True if the address is a user, otherwise false.
+   */
+  function _isUser(
+    address user
+  ) private view returns (bool status) {
+    status = _users[user].user != address(0);
   }
 }

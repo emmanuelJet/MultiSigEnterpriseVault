@@ -37,14 +37,6 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
   }
 
   /**
-   * @notice Returns the address of the current executor.
-   * @return The address of the executor.
-   */
-  function executor() public view returns (address) {
-    return _executor;
-  }
-
-  /**
    * @notice Initiates the owner override process with a timelock.
    * @dev Only callable by the executor. The override process will start and only be executable after the timelock period has passed.
    */
@@ -56,6 +48,14 @@ abstract contract ExecutorRole is AccessControl, IExecutorRole {
     overrideInitiatedAt = block.timestamp;
     isOverrideActive = true;
     emit OwnerOverrideInitiated(_msgSender(), overrideInitiatedAt);
+  }
+
+  /**
+   * @notice Returns the address of the current executor.
+   * @return The address of the executor.
+   */
+  function executor() public view returns (address) {
+    return _executor;
   }
 
   /**

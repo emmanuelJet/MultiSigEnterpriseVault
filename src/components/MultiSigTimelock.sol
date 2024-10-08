@@ -127,7 +127,7 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
     ActionType actionType,
     address target,
     uint256 value
-  ) public validSigner isExecutable validActionType(actionType) {
+  ) public validSigner isExecutable validActionType(actionType) nonReentrant {
     if (_isPendingAction) revert PendingActionState(_isPendingAction);
 
     if (actionType == ActionType.ADD_SIGNER && target == address(0)) {
@@ -208,7 +208,7 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
    */
   function executeAction(
     uint256 actionId
-  ) public validExecutor validAction(actionId) pendingAction(actionId) {
+  ) public validExecutor validAction(actionId) pendingAction(actionId) nonReentrant {
     Action storage action = _actions[actionId];
     uint256 executionTimestamp = block.timestamp;
     if (!_isMultiSigTimelockElapsed(action.timestamp)) {
@@ -221,7 +221,9 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
       if (!_isSignatoryThresholdMet(action.approvals.current())) {
         revert InsufficientSignerApprovals(signatoryThreshold, action.approvals.current());
       }
-    } else {
+    }
+
+    if (_isExecutor(_msgSender()) && action.approvals.current() < signatoryThreshold) {
       action.isOverride = true;
     }
 
@@ -333,6 +335,20 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
   }
 
   /**
+   * @notice Updates the signatory threshold for the vault.
+   *  Emits the `ThresholdUpdated` event.
+   * @param newThreshold The new threshold value for signatory approval.
+   * @dev Only callable by the contract executors.
+   */
+  function _updateSignatoryThreshold(
+    uint256 newThreshold
+  ) internal validExecutor {
+    uint256 oldThreshold = signatoryThreshold;
+    signatoryThreshold = newThreshold;
+    emit ThresholdUpdated(oldThreshold, newThreshold);
+  }
+
+  /**
    * @notice Verifies if the signatory threshold has been met for an action.
    * @param approvalCount The current number of approvals for the action.
    * @return bool Returns true if the required signatory threshold is met, otherwise false.
@@ -352,20 +368,6 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
     uint256 initiatedAt
   ) internal view returns (bool) {
     return block.timestamp >= initiatedAt + multiSigTimelock;
-  }
-
-  /**
-   * @notice Updates the signatory threshold for the vault.
-   *  Emits the `ThresholdUpdated` event.
-   * @param newThreshold The new threshold value for signatory approval.
-   * @dev Only callable by the contract executors.
-   */
-  function _updateSignatoryThreshold(
-    uint256 newThreshold
-  ) internal validExecutor {
-    uint256 oldThreshold = signatoryThreshold;
-    signatoryThreshold = newThreshold;
-    emit ThresholdUpdated(oldThreshold, newThreshold);
   }
 
   /**

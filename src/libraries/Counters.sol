@@ -19,17 +19,6 @@ library Counters {
   }
 
   /**
-   * @notice Returns the current value of the counter.
-   * @param counter The counter to query
-   * @return The current value of the counter
-   */
-  function current(
-    Counter storage counter
-  ) internal view returns (uint256) {
-    return counter.value;
-  }
-
-  /**
    * @notice Increments the counter by 1.
    * @param counter The counter to increment
    */
@@ -67,5 +56,16 @@ library Counters {
    */
   function decrementBy(Counter storage counter, uint256 quantity) internal {
     counter.value = counter.value.subtract(quantity);
+  }
+
+  /**
+   * @notice Returns the current value of the counter.
+   * @param counter The counter to query
+   * @return The current value of the counter
+   */
+  function current(
+    Counter storage counter
+  ) internal view returns (uint256) {
+    return counter.value;
   }
 }
