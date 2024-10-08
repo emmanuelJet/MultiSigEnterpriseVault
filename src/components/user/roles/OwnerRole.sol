@@ -54,14 +54,6 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
   }
 
   /**
-   * @notice Returns the address of the current owner.
-   * @return The address of the owner.
-   */
-  function owner() public view returns (address) {
-    return _owner;
-  }
-
-  /**
    * @notice Increases the owner override timelock to a new limit.
    * Emits the `OwnerOverrideTimelockIncreased` event.
    *
@@ -96,14 +88,11 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
   }
 
   /**
-   * @notice Checks if an address is the contract owner.
-   * @param account The address to check.
-   * @return status True if the address is the contract owner, otherwise false.
+   * @notice Returns the address of the current owner.
+   * @return The address of the owner.
    */
-  function _isOwner(
-    address account
-  ) internal view returns (bool status) {
-    status = account == _owner && hasRole(OWNER_ROLE, account);
+  function owner() public view returns (address) {
+    return _owner;
   }
 
   /**
@@ -118,5 +107,16 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
 
     _owner = newOwner;
     emit OwnerChanged(oldOwner, newOwner);
+  }
+
+  /**
+   * @notice Checks if an address is the contract owner.
+   * @param account The address to check.
+   * @return status True if the address is the contract owner, otherwise false.
+   */
+  function _isOwner(
+    address account
+  ) internal view returns (bool status) {
+    status = account == _owner && hasRole(OWNER_ROLE, account);
   }
 }

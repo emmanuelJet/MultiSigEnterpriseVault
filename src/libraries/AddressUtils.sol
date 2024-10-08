@@ -40,8 +40,8 @@ library AddressUtils {
    */
   function requireValidTransactionReceiver(
     address payable receiver
-  ) internal pure {
-    if (receiver == address(0)) {
+  ) internal view {
+    if (receiver == address(0) || receiver == address(this)) {
       revert InvalidTransactionReceiver(receiver);
     }
   }

@@ -8,7 +8,6 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {IMultiSigTransaction} from '../interfaces/IMultiSigTransaction.sol';
-import {ERC20Validator} from '../libraries/ERC20Validator.sol';
 import {Transaction} from '../utilities/VaultStructs.sol';
 import {MultiSigTimelock} from './MultiSigTimelock.sol';
 import {SafeMath} from '../libraries/SafeMath.sol';
@@ -84,8 +83,7 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
   /**
    * @inheritdoc IMultiSigTransaction
    */
-  function depositToken(address token, uint256 amount) external payable {
-    ERC20Validator.requireValidERC20Token(token);
+  function depositToken(address token, uint256 amount) external payable nonReentrant {
     uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
 
     if (allowance < amount) {
@@ -109,14 +107,13 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
     address token,
     uint256 value,
     bytes memory data
-  ) public validSigner isExecutable {
+  ) public validSigner isExecutable nonReentrant {
     AddressUtils.requireValidTransactionReceiver(to);
     if (_isPendingTransaction) revert PendingTransactionState(_isPendingTransaction);
 
     if (token == address(0)) {
       if (value > getBalance()) revert InsufficientTokenBalance(getBalance(), value);
     } else {
-      ERC20Validator.requireValidERC20Token(token);
       if (value > getTokenBalance(token)) revert InsufficientTokenBalance(getTokenBalance(token), value);
     }
 
@@ -171,7 +168,7 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
    */
   function executeTransaction(
     uint256 txId
-  ) public validExecutor validTransaction(txId) pendingTransaction(txId) {
+  ) public validExecutor validTransaction(txId) pendingTransaction(txId) nonReentrant {
     uint256 executionTimestamp = block.timestamp;
     Transaction storage txn = _transactions[txId];
     if (!_isMultiSigTimelockElapsed(txn.timestamp)) {
@@ -184,7 +181,9 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
       if (!_isSignatoryThresholdMet(txn.approvals.current())) {
         revert InsufficientSignerApprovals(signatoryThreshold, txn.approvals.current());
       }
-    } else {
+    }
+
+    if (_isExecutor(_msgSender()) && txn.approvals.current() < signatoryThreshold) {
       txn.isOverride = true;
     }
 
@@ -233,8 +232,7 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
    */
   function getTokenBalance(
     address token
-  ) public returns (uint256) {
-    ERC20Validator.requireValidERC20Token(token);
+  ) public view returns (uint256) {
     return IERC20(token).balanceOf(address(this));
   }
 

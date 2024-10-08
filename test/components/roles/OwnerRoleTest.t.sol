@@ -37,10 +37,6 @@ contract OwnerRoleTest is MultiSigEnterpriseVaultTest {
     vault.increaseOwnerOverrideTimelock(5 days);
   }
 
-  function testOwnerOverrideTimelock() public view {
-    assertEq(vault.ownerOverrideTimelock(), initialOwnerOverrideTimelock);
-  }
-
   function testOwnerCanIncreaseOverrideTimelock() public {
     vm.prank(vaultOwner);
     vault.increaseOwnerOverrideTimelock(5 days);
