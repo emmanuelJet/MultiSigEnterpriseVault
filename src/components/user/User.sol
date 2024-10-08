@@ -11,7 +11,7 @@ import {SafeMath} from '../../libraries/SafeMath.sol';
 import {RoleType} from '../../utilities/VaultEnums.sol';
 import {UserProfile} from '../../utilities/VaultStructs.sol';
 import {AddressUtils} from '../../libraries/AddressUtils.sol';
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
 /**
  * @title User Contract

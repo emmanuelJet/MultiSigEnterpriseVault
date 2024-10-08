@@ -83,7 +83,7 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
   /**
    * @inheritdoc IMultiSigTransaction
    */
-  function depositToken(address token, uint256 amount) external nonReentrant payable {
+  function depositToken(address token, uint256 amount) external payable nonReentrant {
     uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
 
     if (allowance < amount) {
