@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {MultiSigTransaction} from './components/MultiSigTransaction.sol';
 import {AddressUtils} from './libraries/AddressUtils.sol';

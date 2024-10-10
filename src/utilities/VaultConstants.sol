@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 /// @dev Role identifier for the Owner role in bytes32
 bytes32 constant OWNER_ROLE = keccak256('RoleType.OWNER');

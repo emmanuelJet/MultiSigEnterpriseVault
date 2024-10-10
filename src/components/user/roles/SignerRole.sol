@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {EnumerableSet} from '@openzeppelin/contracts/utils/structs/EnumerableSet.sol';
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
@@ -83,9 +83,9 @@ abstract contract SignerRole is AccessControl, ISignerRole {
   ) internal virtual validExecutor {
     _validateSignerAddress(newSigner);
     if (isSigner(newSigner)) revert SignerAlreadyExists(newSigner);
+    if (!_signers.add(newSigner)) revert SignerAlreadyExists(newSigner);
 
     _grantRole(SIGNER_ROLE, newSigner);
-    _signers.add(newSigner);
     _signerCount.increment();
     emit SignerAdded(newSigner);
   }
@@ -99,9 +99,9 @@ abstract contract SignerRole is AccessControl, ISignerRole {
     address signer
   ) internal virtual validExecutor {
     if (!isSigner(signer)) revert SignerDoesNotExist(signer);
+    if (!_signers.remove(signer)) revert SignerDoesNotExist(signer);
 
     _revokeRole(SIGNER_ROLE, signer);
-    _signers.remove(signer);
     _signerCount.decrement();
     emit SignerRemoved(signer);
   }

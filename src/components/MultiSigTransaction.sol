@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import '../libraries/Counters.sol';
 import '../libraries/AddressUtils.sol';
@@ -84,14 +84,16 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
    * @inheritdoc IMultiSigTransaction
    */
   function depositToken(address token, uint256 amount) external payable nonReentrant {
-    uint256 allowance = IERC20(token).allowance(_msgSender(), address(this));
+    IERC20 erc20Token = IERC20(token);
+    uint256 allowance = erc20Token.allowance(_msgSender(), address(this));
 
     if (allowance < amount) {
-      uint256 remainingAllowance = amount.subtract(allowance);
-      revert ERC20InsufficientAllowance(_msgSender(), allowance, remainingAllowance);
+      uint256 neededAllowance = amount.subtract(allowance);
+      revert ERC20InsufficientAllowance(_msgSender(), allowance, neededAllowance);
     }
 
-    IERC20(token).transferFrom(_msgSender(), address(this), amount);
+
+    SafeERC20.safeTransferFrom(erc20Token, _msgSender(), address(this), amount);
     emit FundsReceived(_msgSender(), token, amount);
   }
 
@@ -141,9 +143,9 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
   ) public validSigner validTransaction(txId) pendingTransaction(txId) {
     Transaction storage txn = _transactions[txId];
     if (txn.signatures.contains(_msgSender())) revert TransactionNotApproved(txId);
+    if (!txn.signatures.add(_msgSender())) revert TransactionNotApproved(txId);
 
     txn.approvals.increment();
-    txn.signatures.add(_msgSender());
     emit TransactionApproved(txId, _msgSender(), block.timestamp);
   }
 
@@ -156,9 +158,9 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
   ) public validSigner validTransaction(txId) pendingTransaction(txId) {
     Transaction storage txn = _transactions[txId];
     if (!txn.signatures.contains(_msgSender())) revert TransactionNotApproved(txId);
+    if (!txn.signatures.remove(_msgSender())) revert TransactionNotApproved(txId);
 
     txn.approvals.decrement();
-    txn.signatures.remove(_msgSender());
     emit TransactionRevoked(txId, _msgSender(), block.timestamp);
   }
 

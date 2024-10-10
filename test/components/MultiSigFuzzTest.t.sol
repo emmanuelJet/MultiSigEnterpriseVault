@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {Address} from '@openzeppelin/contracts/utils/Address.sol';
@@ -61,9 +61,7 @@ contract MultiSigFuzzTest is BaseMultiSigTest {
         && recipient != vaultExecutor && recipient != vaultAddress
     );
 
-    vm.deal(vaultOwner, 100 ether);
-    vm.prank(vaultOwner);
-    Address.sendValue(payable(vaultAddress), 10 ether);
+    vm.deal(vaultAddress, 100 ether);
     uint256 initialRecipientBalance = recipient.balance;
     uint256 initialVaultBalance = vaultAddress.balance;
 
