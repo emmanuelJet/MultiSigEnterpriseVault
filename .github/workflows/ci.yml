@@ -72,7 +72,7 @@ jobs:
           cp out/MultiSigEnterpriseVault.sol/MultiSigEnterpriseVault.json dist/deployment_output.json
 
       - name: Upload deployment artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: MultiSigEnterpriseVault
           path: dist/
