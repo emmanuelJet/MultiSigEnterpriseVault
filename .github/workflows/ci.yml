@@ -61,6 +61,8 @@ jobs:
 
       - name: Deploy MultiSigEnterpriseVault Contract
         run: |
+          mkdir -p dist
+          
           forge create src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault \
             --chain pulsechain-testnet \
             --rpc-url ${{ env.PULSECHAIN_TESTNET_RPC_URL }} \
