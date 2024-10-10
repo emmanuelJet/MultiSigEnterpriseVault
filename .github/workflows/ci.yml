@@ -62,18 +62,18 @@ jobs:
       - name: Deploy MultiSigEnterpriseVault Contract
         run: |
           mkdir -p dist
-          
+
           forge create src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault \
             --chain pulsechain-testnet \
-            --rpc-url ${{ env.PULSECHAIN_TESTNET_RPC_URL }} \
-            --constructor-args ${{ env.OWNER_ADDRESS }} ${{ env.INITIAL_THRESHOLD }} ${{ env.INITIAL_MULTISIG_TIMELOCK }} ${{ env.INITIAL_OWNEROVEREIDE_TIMELOCK }} \
+            --rpc-url $PULSECHAIN_TESTNET_RPC_URL \
+            --constructor-args $OWNER_ADDRESS $INITIAL_THRESHOLD $INITIAL_MULTISIG_TIMELOCK $INITIAL_OWNEROVEREIDE_TIMELOCK \
             --private-key ${{ secrets.PRIVATE_KEY }} --verify --verifier blockscout --verifier-url https://api.scan.v4.testnet.pulsechain.com/api/ | tee dist/deployment_result.txt
 
-      - name: Save deployment artifacts
+      - name: Save Deployment ABI
         run: |
           forge inspect src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault abi > dist/deployment_abi.json
 
-      - name: Upload deployment artifact
+      - name: Upload Deployment Artifact
         uses: actions/upload-artifact@v4
         with:
           name: MultiSigEnterpriseVault
