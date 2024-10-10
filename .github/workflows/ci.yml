@@ -20,7 +20,6 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
-        id: foundry-output
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
@@ -28,27 +27,6 @@ jobs:
       - name: Show Forge version
         run: |
           forge --version
-
-      - name: Cache Foundry
-        uses: actions/cache@v3
-        with:
-          path: ~/.foundry
-          key: ${{ runner.os }}-foundry-cache
-          restore-keys: |
-            ${{ runner.os }}-foundry-cache
-
-  build:
-    name: Build Contracts
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Restore Foundry Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.foundry
-          key: ${{ runner.os }}-foundry-cache
 
       - name: Run Forge fmt
         run: |
@@ -60,19 +38,6 @@ jobs:
           forge build --sizes
         id: forge-build
 
-  quality:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Restore Foundry Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.foundry
-          key: ${{ runner.os }}-foundry-cache
-
       - name: Run Forge tests
         run: |
           forge test -vvv
@@ -81,17 +46,18 @@ jobs:
   deploy:
     name: Deploy to PulseChain Testnet
     runs-on: ubuntu-latest
-    needs: quality
+    needs: setup
     environment: pulsechain-testnet
     if: github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Restore Foundry Cache
-        uses: actions/cache@v3
         with:
-          path: ~/.foundry
-          key: ${{ runner.os }}-foundry-cache
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Deploy MultiSigEnterpriseVault Contract
         run: |
