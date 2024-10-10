@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {Script, console} from 'forge-std/Script.sol';
 import {MultiSigEnterpriseVault} from '../src/MultiSigEnterpriseVault.sol';

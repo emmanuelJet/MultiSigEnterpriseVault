@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import '../libraries/Counters.sol';
 import {User} from './user/User.sol';
@@ -181,9 +181,9 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
   ) public validSigner validAction(actionId) pendingAction(actionId) {
     Action storage action = _actions[actionId];
     if (action.signatures.contains(_msgSender())) revert ActionNotApproved(actionId);
+    if (!action.signatures.add(_msgSender())) revert ActionNotApproved(actionId);
 
     action.approvals.increment();
-    action.signatures.add(_msgSender());
     emit ActionApproved(actionId, _msgSender(), block.timestamp);
   }
 
@@ -196,9 +196,9 @@ abstract contract MultiSigTimelock is User, IMultiSigTimelock {
   ) public validSigner validAction(actionId) pendingAction(actionId) {
     Action storage action = _actions[actionId];
     if (!action.signatures.contains(_msgSender())) revert ActionNotApproved(actionId);
+    if (!action.signatures.remove(_msgSender())) revert ActionNotApproved(actionId);
 
     action.approvals.decrement();
-    action.signatures.remove(_msgSender());
     emit ActionRevoked(actionId, _msgSender(), block.timestamp);
   }
 

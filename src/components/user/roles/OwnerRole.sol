@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
 import {IOwnerRole} from '../../../interfaces/user/roles/IOwnerRole.sol';
@@ -20,26 +20,26 @@ abstract contract OwnerRole is AccessControl, IOwnerRole {
 
   /**
    * @dev Initializes the Owner role and sets the initial owner override timelock.
-   * @param owner_ The address of the initial owner.
+   * @param initialOwner The address of the initial owner.
    * @param initialOwnerOverrideTimelock The initial timelock value for owner override.
    */
-  constructor(address owner_, uint256 initialOwnerOverrideTimelock) {
-    AddressUtils.requireValidUserAddress(owner_);
+  constructor(address initialOwner, uint256 initialOwnerOverrideTimelock) {
+    AddressUtils.requireValidUserAddress(initialOwner);
     if (initialOwnerOverrideTimelock <= 0) {
       revert InvalidOwnerOverrideTimelockValue(initialOwnerOverrideTimelock);
     }
 
     // Grant DEFAULT_ADMIN_ROLE to the owner
-    _grantRole(DEFAULT_ADMIN_ROLE, owner_);
+    _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
 
     // Now change the admin role of DEFAULT_ADMIN_ROLE to OWNER_ROLE
     _setRoleAdmin(DEFAULT_ADMIN_ROLE, OWNER_ROLE);
 
     // Grant OWNER_ROLE to the owner
-    _grantRole(OWNER_ROLE, owner_);
+    _grantRole(OWNER_ROLE, initialOwner);
 
     ownerOverrideTimelock = initialOwnerOverrideTimelock;
-    _owner = owner_;
+    _owner = initialOwner;
   }
 
   /**

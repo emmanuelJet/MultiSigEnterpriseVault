@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.20;
 
 import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
 import {IExecutorRole} from '../../../interfaces/user/roles/IExecutorRole.sol';
