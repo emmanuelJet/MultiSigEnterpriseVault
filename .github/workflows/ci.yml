@@ -65,8 +65,8 @@ jobs:
 
           forge create src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault \
             --chain pulsechain-testnet \
-            --rpc-url $PULSECHAIN_TESTNET_RPC_URL \
-            --constructor-args $OWNER_ADDRESS $INITIAL_THRESHOLD $INITIAL_MULTISIG_TIMELOCK $INITIAL_OWNEROVEREIDE_TIMELOCK \
+            --rpc-url ${{ vars.PULSECHAIN_TESTNET_RPC_URL }} \
+            --constructor-args ${{ vars.OWNER_ADDRESS }} ${{ vars.INITIAL_THRESHOLD }} ${{ vars.INITIAL_MULTISIG_TIMELOCK }} ${{ vars.INITIAL_OWNEROVEREIDE_TIMELOCK }} \
             --private-key ${{ secrets.PRIVATE_KEY }} --verify --verifier blockscout --verifier-url https://api.scan.v4.testnet.pulsechain.com/api/ | tee dist/deployment_result.txt
 
       - name: Save Deployment ABI
