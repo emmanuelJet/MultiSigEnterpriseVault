@@ -1,0 +1,114 @@
+name: CI and Deploy to PulseChain Testnet
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  setup:
+    name: Setup Foundry
+    runs-on: ubuntu-latest
+    outputs:
+      foundry-path: ${{ steps.foundry-output.outputs.foundry-path }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        id: foundry-output
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Show Forge version
+        run: |
+          forge --version
+
+      - name: Cache Foundry
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.foundry-output.outputs.foundry-path }}
+          key: ${{ runner.os }}-foundry-cache
+          restore-keys: |
+            ${{ runner.os }}-foundry-cache
+
+  build:
+    name: Build Contracts
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Foundry Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ needs.setup.outputs.foundry-path }}
+          key: ${{ runner.os }}-foundry-cache
+
+      - name: Run Forge fmt
+        run: |
+          forge fmt --check
+        id: forge-fmt
+
+      - name: Run Forge build
+        run: |
+          forge build --sizes
+        id: forge-build
+
+  quality:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Foundry Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ needs.setup.outputs.foundry-path }}
+          key: ${{ runner.os }}-foundry-cache
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: forge-test
+
+  deploy:
+    name: Deploy to PulseChain Testnet
+    runs-on: ubuntu-latest
+    needs: quality
+    environment: pulsechain-testnet
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore Foundry Cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ needs.setup.outputs.foundry-path }}
+          key: ${{ runner.os }}-foundry-cache
+
+      - name: Deploy MultiSigEnterpriseVault Contract
+        run: |
+          forge create src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault \
+            --chain pulsechain-testnet \
+            --rpc-url ${{ env.PULSECHAIN_TESTNET_RPC_URL }} \
+            --constructor-args ${{ env.OWNER_ADDRESS }} ${{ env.INITIAL_THRESHOLD }} ${{ env.INITIAL_MULTISIG_TIMELOCK }} ${{ env.INITIAL_OWNEROVEREIDE_TIMELOCK }} \
+            --private-key ${{ secrets.PRIVATE_KEY }} --verify --verifier blockscout --verifier-url https://api.scan.v4.testnet.pulsechain.com/api/ | tee dist/deployment_result.txt
+
+      - name: Save deployment artifacts
+        run: |
+          cp out/MultiSigEnterpriseVault.sol/MultiSigEnterpriseVault.json dist/deployment_output.json
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: MultiSigEnterpriseVault
+          path: dist/

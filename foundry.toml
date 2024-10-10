@@ -10,4 +10,8 @@ quote_style = "single"
 multiline_func_header = "params_first"
 single_line_statement_blocks = "preserve"
 
+[rpc_endpoints]
+pulsechain = "${PULSECHAIN_RPC_URL}"
+pulsechain-testnet = "${PULSECHAIN_TESTNET_RPC_URL}"
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

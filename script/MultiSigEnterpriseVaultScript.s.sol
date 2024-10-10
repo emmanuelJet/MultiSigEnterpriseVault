@@ -11,12 +11,13 @@ contract MultiSigEnterpriseVaultScript is Script {
   function setUp() public {}
 
   function run() public {
-    vm.startBroadcast();
+    uint256 deployerPrivateKey = vm.envUint('PRIVATE_KEY');
+    vm.startBroadcast(deployerPrivateKey);
 
-    uint256 initialThreshold = 3;
-    uint256 initialMultiSigTimelock = 1 days;
-    uint256 initialOwnerOverrideTimelock = 3 days;
-    address vaultOwner = makeAddr('vaultOwner');
+    address vaultOwner = vm.envAddress('OWNER_ADDRESS');
+    uint256 initialThreshold = vm.envUint('INITIAL_THRESHOLD');
+    uint256 initialMultiSigTimelock = vm.envUint('INITIAL_MULTISIG_TIMELOCK');
+    uint256 initialOwnerOverrideTimelock = vm.envUint('INITIAL_OWNEROVEREIDE_TIMELOCK');
 
     vault =
       new MultiSigEnterpriseVault(vaultOwner, initialThreshold, initialMultiSigTimelock, initialOwnerOverrideTimelock);
