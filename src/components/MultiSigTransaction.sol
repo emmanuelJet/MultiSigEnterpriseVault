@@ -92,7 +92,6 @@ abstract contract MultiSigTransaction is MultiSigTimelock, IMultiSigTransaction 
       revert ERC20InsufficientAllowance(_msgSender(), allowance, neededAllowance);
     }
 
-
     SafeERC20.safeTransferFrom(erc20Token, _msgSender(), address(this), amount);
     emit FundsReceived(_msgSender(), token, amount);
   }
