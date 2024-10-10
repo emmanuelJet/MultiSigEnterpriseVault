@@ -14,8 +14,6 @@ jobs:
   setup:
     name: Setup Foundry
     runs-on: ubuntu-latest
-    outputs:
-      foundry-path: ${{ steps.foundry-output.outputs.foundry-path }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,7 +32,7 @@ jobs:
       - name: Cache Foundry
         uses: actions/cache@v3
         with:
-          path: ${{ steps.foundry-output.outputs.foundry-path }}
+          path: ~/.foundry
           key: ${{ runner.os }}-foundry-cache
           restore-keys: |
             ${{ runner.os }}-foundry-cache
@@ -49,7 +47,7 @@ jobs:
       - name: Restore Foundry Cache
         uses: actions/cache@v3
         with:
-          path: ${{ needs.setup.outputs.foundry-path }}
+          path: ~/.foundry
           key: ${{ runner.os }}-foundry-cache
 
       - name: Run Forge fmt
@@ -72,7 +70,7 @@ jobs:
       - name: Restore Foundry Cache
         uses: actions/cache@v3
         with:
-          path: ${{ needs.setup.outputs.foundry-path }}
+          path: ~/.foundry
           key: ${{ runner.os }}-foundry-cache
 
       - name: Run Forge tests
@@ -92,7 +90,7 @@ jobs:
       - name: Restore Foundry Cache
         uses: actions/cache@v3
         with:
-          path: ${{ needs.setup.outputs.foundry-path }}
+          path: ~/.foundry
           key: ${{ runner.os }}-foundry-cache
 
       - name: Deploy MultiSigEnterpriseVault Contract
