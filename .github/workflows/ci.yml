@@ -71,7 +71,7 @@ jobs:
 
       - name: Save deployment artifacts
         run: |
-          cp out/MultiSigEnterpriseVault.sol/MultiSigEnterpriseVault.json dist/deployment_output.json
+          forge inspect src/MultiSigEnterpriseVault.sol:MultiSigEnterpriseVault abi > dist/deployment_abi.json
 
       - name: Upload deployment artifact
         uses: actions/upload-artifact@v4
