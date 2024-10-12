@@ -41,6 +41,8 @@ interface IExecutorRole {
 
   /**
    * @dev Error thrown when trying to approve an owner override before the timelock has passed.
+   * @param currentTime The current time when the error is thrown.
+   * @param requiredTime The required time that must elapse before the owner override can be executed.
    */
   error OwnerOverrideTimelockNotElapsed(uint256 currentTime, uint256 requiredTime);
 

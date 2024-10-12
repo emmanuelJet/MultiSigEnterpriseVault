@@ -11,6 +11,8 @@ multiline_func_header = "params_first"
 single_line_statement_blocks = "preserve"
 
 [rpc_endpoints]
+sepolia = "${SEPOLIA_RPC_URL}"
+mainnet = "${ETH_MAINNET_RPC_URL}"
 pulsechain = "${PULSECHAIN_RPC_URL}"
 pulsechain-testnet = "${PULSECHAIN_TESTNET_RPC_URL}"
 

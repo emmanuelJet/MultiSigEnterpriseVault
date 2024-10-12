@@ -5,6 +5,7 @@ import '@openzeppelin/contracts/utils/Address.sol';
 
 /**
  * @title AddressUtils Library
+ * @author Emmanuel Joseph (JET)
  * @dev Extends OpenZeppelin's Address library to add custom utility functions.
  */
 library AddressUtils {
