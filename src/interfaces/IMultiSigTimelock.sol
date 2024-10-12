@@ -5,6 +5,7 @@ import {ActionType} from '../utilities/VaultEnums.sol';
 
 /**
  * @title IMultiSigTimelock Interface
+ * @author Emmanuel Joseph (JET)
  * @dev Interface defining errors and events for timelock management.
  */
 interface IMultiSigTimelock {

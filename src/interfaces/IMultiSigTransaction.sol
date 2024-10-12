@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 /**
  * @title IMultiSigTransaction Interface
+ * @author Emmanuel Joseph (JET)
  * @dev Interface defining custom errors, events, and external functions for transaction management.
  */
 interface IMultiSigTransaction {

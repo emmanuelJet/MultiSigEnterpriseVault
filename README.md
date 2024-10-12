@@ -2,6 +2,7 @@
 
 [![Solidity](https://img.shields.io/badge/Solidity-363636.svg?logo=solidity&logoColor=white)](https://soliditylang.org)
 [![Foundry Framework](https://custom-icon-badges.demolab.com/badge/Foundry-E8E8E8.svg?logo=foundry)](https://getfoundry.sh)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 ![Build Status](https://github.com/emmanuelJet/MultiSigEnterpriseVault/actions/workflows/ci.yml/badge.svg?branch=main)
 
 An open-source, enterprise-grade Multi-Signature Vault smart contract developed using Solidity and Foundry. It provides advanced security, customizable timelocks, and role-based access control for managing digital assets.
@@ -11,8 +12,8 @@ An open-source, enterprise-grade Multi-Signature Vault smart contract developed 
 - Multi-Signature Vault functionality to manage **ETH** and **ERC20** tokens.
 - Separate timelocks for transactions and owner overrides with delays.
 - Role-based access control (Owner, Executor, Signers).
-- Secure self-destruct mechanism with safety checks.
 - Flexible and administrative threshold settings.
+- Designed to be secure and gas-efficient.
 
 ## Use Cases
 
@@ -68,7 +69,7 @@ This command outputs a single Solidity file containing all dependencies.
 
 ## Deployment Guide
 
-This section explains how to deploy the MultiSigEnterpriseVault contract to PulseChain Testnet v4.
+This section explains how to deploy the MultiSigEnterpriseVault contract to PulseChain Testnet v4 using GitHub Actions.
 
 ### Prerequisites
 
@@ -91,8 +92,36 @@ Set the following environment variables:
 
 After a successful deployment, artifacts will be stored in the `dist/` directory:
 
-- `deployment_output.json`: Contains the contract ABI and details.
+- `deployment_abi.json`: Contains the contract ABI.
 - `deployment_result.txt`: Contains the contract address and deployment transaction details.
+
+## Local Deployment
+
+- Create the `.env` file from the `.env.example` file and fill in the environment variables;
+
+```bash
+cp .env.example .env
+```
+
+- Load the variables in the `.env` file;
+
+```bash
+source .env
+```
+
+- Deploy `MultiSigEnterpriseVault` contract using `forge script`
+
+```bash
+forge script script/MultiSigEnterpriseVaultScript.s.sol:MultiSigEnterpriseVaultScript --chain pulsechain-testnet --private-key $PRIVATE_KEY --rpc-url $PULSECHAIN_TESTNET_RPC_URL --broadcast --verify --verifier blockscout --verifier-url https://api.scan.v4.testnet.pulsechain.com/api/ | tee .private/deployment_result.txt
+```
+
+## Contribution
+
+I welcome contributions to this project. If you’re interested in contributing, please check the [Contribution Guidelines](CONTRIBUTING.md) for detailed instructions.
+
+## Code of Conduct
+
+Please read the [Code of Conduct](CODE_OF_CONDUCT.md) to understand the rules and expectations for participation in the project.
 
 ## License
 
@@ -109,3 +138,7 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ```
+
+## Disclaimer
+
+**This project has not been audited and is not recommended for production use.** Use this code at your own risk. The project maintainer takes no responsibility for any losses or issues that arise from using the code in a live environment.
